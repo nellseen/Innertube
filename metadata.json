@@ -1,0 +1,6 @@
+{
+  "name": "Aetheria Music",
+  "description": "Premium dark iOS Glassmorphism music streaming and discovery application powered by Innertube and YouTube Music.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
