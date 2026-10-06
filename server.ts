@@ -92,6 +92,14 @@ async function startServer() {
 
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
+
+  // Guard against unhandled rejections or player decipher errors from crashing the server
+  process.on('unhandledRejection', (reason: any) => {
+    console.warn('[WARN] Process unhandledRejection (non-fatal):', reason?.message || reason);
+  });
+  process.on('uncaughtException', (err: any) => {
+    console.error('[WARN] Process uncaughtException (non-fatal):', err?.message || err);
+  });
 }
 
 startServer().catch((err) => {

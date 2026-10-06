@@ -648,19 +648,40 @@ export class InnertubeService {
     console.log(`[STREAM] Extracting audio format for videoId=${videoId}`);
 
     try {
-      // 1. Try Innertube getStreamingData or getBasicInfo
+      // 1. Try Innertube getBasicInfo
       const info: any = await yt.getBasicInfo(videoId).catch(() => null);
 
       if (info && info.streaming_data) {
-        const format = info.chooseFormat({ type: 'audio', quality: 'best' });
+        let format: any = null;
+        try {
+          format = info.chooseFormat({ type: 'audio', quality: 'best' });
+        } catch {
+          // Format not available or restricted
+        }
+
         if (format) {
-          const decipheredUrl = format.decipher(yt.session.player);
-          if (decipheredUrl) {
+          let directUrl: string | null = null;
+
+          // Check if direct URL is already present and valid
+          if (typeof format.url === 'string' && format.url.startsWith('http')) {
+            directUrl = format.url;
+          } else if (typeof format.decipher === 'function' && yt.session?.player) {
+            try {
+              const res = await format.decipher(yt.session.player);
+              if (typeof res === 'string' && res.startsWith('http')) {
+                directUrl = res;
+              }
+            } catch (decipherErr: any) {
+              console.log(`[STREAM] Non-fatal decipher notice for ${videoId}: ${decipherErr?.message || decipherErr}`);
+            }
+          }
+
+          if (directUrl) {
             console.log(`[STREAM] Audio URL ready for videoId=${videoId}`);
             return {
               success: true,
               videoId,
-              url: decipheredUrl,
+              url: directUrl,
               mimeType: format.mime_type || 'audio/mp4',
               bitrate: format.bitrate || 128000,
               quality: 'High Quality Audio',
@@ -671,8 +692,8 @@ export class InnertubeService {
         }
       }
 
-      // If streaming_data not available due to datacenter IP restrictions
-      console.log(`[STREAM] Server-side direct stream URL unavailable from datacenter IP for ${videoId}`);
+      // If direct stream URL not decipherable or blocked by upstream bot protection
+      console.log(`[STREAM] Direct URL restricted for ${videoId}, client engine will handle playback`);
       return {
         success: false,
         code: 'UPSTREAM_UNAVAILABLE',
@@ -680,7 +701,7 @@ export class InnertubeService {
         retryable: true,
       };
     } catch (err: any) {
-      console.error(`[ERROR] Stream resolution error for ${videoId}:`, err?.message || err);
+      console.error(`[STREAM] Non-fatal stream resolution exception for ${videoId}:`, err?.message || err);
       return {
         success: false,
         code: 'UPSTREAM_UNAVAILABLE',
