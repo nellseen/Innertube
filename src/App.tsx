@@ -11,6 +11,7 @@ import { FullscreenPlayer } from './components/player/FullscreenPlayer.js';
 import { QueueModal } from './components/player/QueueModal.js';
 import { LyricsPanel } from './components/player/LyricsPanel.js';
 import { CreatePlaylistModal } from './components/modals/CreatePlaylistModal.js';
+import { AboutModal } from './components/modals/AboutModal.js';
 
 import { HomePage } from './pages/HomePage.js';
 import { TrendingPage } from './pages/TrendingPage.js';
@@ -26,6 +27,7 @@ export default function App() {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isLyricsOpen, setIsLyricsOpen] = useState(false);
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const navigateTo = (page: NavigationPage) => {
     setCurrentPage(page);
@@ -75,6 +77,7 @@ export default function App() {
             currentPage={currentPage}
             onNavigate={navigateTo}
             onCreatePlaylist={() => setIsCreatePlaylistOpen(true)}
+            onOpenAbout={() => setIsAboutOpen(true)}
           />
 
           {/* Main Content Area */}
@@ -83,6 +86,7 @@ export default function App() {
             <MobileHeader
               currentPage={currentPage}
               onSearchClick={() => navigateTo({ name: 'search' })}
+              onOpenAbout={() => setIsAboutOpen(true)}
             />
 
             {/* Page Router Outlet */}
@@ -130,6 +134,12 @@ export default function App() {
           <CreatePlaylistModal
             isOpen={isCreatePlaylistOpen}
             onClose={() => setIsCreatePlaylistOpen(false)}
+          />
+
+          {/* 8. About Nell Modal */}
+          <AboutModal
+            isOpen={isAboutOpen}
+            onClose={() => setIsAboutOpen(false)}
           />
         </div>
       </PlayerProvider>

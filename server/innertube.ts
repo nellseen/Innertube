@@ -690,11 +690,109 @@ export class InnertubeService {
     }
   }
 
-  // --- LYRICS ---
-  async getLyrics(videoId: string): Promise<LyricsResponse> {
+  // --- LYRICS (Synced & Fallback Support) ---
+  async getLyrics(
+    videoId: string,
+    title?: string,
+    artist?: string,
+    duration?: number
+  ): Promise<LyricsResponse> {
     const yt = await this.getClient();
-    console.log(`[LYRICS] Fetching lyrics for videoId=${videoId}`);
+    console.log(`[LYRICS] Fetching lyrics for videoId=${videoId}, title="${title || ''}", artist="${artist || ''}"`);
 
+    // Helper: Parse LRC format timestamps
+    const parseLRC = (lrcText: string): { text: string; startMs: number }[] => {
+      const lines: { text: string; startMs: number }[] = [];
+      const regex = /\[(\d{2}):(\d{2}(?:\.\d{2,3})?)\](.*)/;
+      for (const raw of lrcText.split('\n')) {
+        const match = raw.match(regex);
+        if (match) {
+          const min = parseInt(match[1], 10);
+          const sec = parseFloat(match[2]);
+          const text = match[3].trim();
+          if (text) {
+            lines.push({ text, startMs: Math.round((min * 60 + sec) * 1000) });
+          }
+        }
+      }
+      return lines;
+    };
+
+    // Helper: Fetch from open fallback lyrics repository (LRCLIB)
+    const fetchFromLrclib = async (
+      trackName: string,
+      artistName?: string,
+      trackDuration?: number
+    ): Promise<LyricsResponse | null> => {
+      try {
+        const cleanTitle = trackName
+          .replace(/\s*[\(\[](?:official|music|video|audio|lyric|lyrics|hd|4k|remastered|mv)[^\)\]]*[\)\]]/gi, '')
+          .replace(/\s*ft\.?.*$/i, '')
+          .replace(/\s*feat\.?.*$/i, '')
+          .trim();
+        const cleanArtist = (artistName || '').replace(/,.*$/, '').trim();
+
+        const params = new URLSearchParams();
+        params.set('track_name', cleanTitle);
+        if (cleanArtist) params.set('artist_name', cleanArtist);
+        if (trackDuration && trackDuration > 0) params.set('duration', Math.round(trackDuration).toString());
+
+        const res = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
+          headers: { 'User-Agent': 'Aetheria-Music/1.0' },
+          signal: AbortSignal.timeout(4500),
+        });
+
+        if (!res.ok) return null;
+        const data: any = await res.json().catch(() => null);
+        if (!data) return null;
+
+        if (data.syncedLyrics) {
+          const parsed = parseLRC(data.syncedLyrics);
+          if (parsed.length > 0) {
+            return {
+              success: true,
+              type: 'synced',
+              lines: parsed,
+              syncAvailable: true,
+            };
+          }
+        }
+
+        if (data.plainLyrics) {
+          const plainLines = data.plainLyrics
+            .split('\n')
+            .map((l: string) => l.trim())
+            .filter(Boolean)
+            .map((text: string) => ({ text }));
+          if (plainLines.length > 0) {
+            return {
+              success: true,
+              type: 'plain',
+              lines: plainLines,
+              syncAvailable: false,
+            };
+          }
+        }
+      } catch (err: any) {
+        // Fallback network failure is non-blocking
+      }
+      return null;
+    };
+
+    // Priority 1: Check if external fallback provides rich SYNCED lyrics first if title is available
+    if (title) {
+      try {
+        const fallbackSynced = await fetchFromLrclib(title, artist, duration);
+        if (fallbackSynced?.syncAvailable && fallbackSynced.lines && fallbackSynced.lines.length > 0) {
+          console.log(`[LYRICS] Found synced lyrics with timestamps (${fallbackSynced.lines.length} lines)`);
+          return fallbackSynced;
+        }
+      } catch {
+        // continue to YouTube Music
+      }
+    }
+
+    // Priority 2: Query YouTube Music Innertube native lyrics
     try {
       const lyricsInfo: any = await yt.music.getLyrics(videoId);
 
@@ -706,28 +804,51 @@ export class InnertubeService {
           .filter(Boolean)
           .map((text: string) => ({ text }));
 
-        console.log(`[LYRICS] Found lyrics (${lines.length} lines)`);
-        return {
-          success: true,
-          type: 'plain',
-          lines,
-          syncAvailable: false,
-        };
+        if (lines.length > 0) {
+          console.log(`[LYRICS] Found YouTube Music native plain lyrics (${lines.length} lines)`);
+          return {
+            success: true,
+            type: 'plain',
+            lines,
+            syncAvailable: false,
+          };
+        }
       }
-
-      return {
-        success: false,
-        code: 'LYRICS_UNAVAILABLE',
-        error: 'Lyrics not available for this song',
-      };
     } catch (err: any) {
-      console.log(`[LYRICS] Unavailable for ${videoId}: ${err?.message}`);
-      return {
-        success: false,
-        code: 'LYRICS_UNAVAILABLE',
-        error: 'Lyrics not available for this song',
-      };
+      console.log(`[LYRICS] Native YouTube Music lyrics unavailable for ${videoId}: ${err?.message}`);
     }
+
+    // Priority 3: Fallback plain lyrics via LRCLIB if title was known or resolve song title
+    let songTitle = title;
+    let songArtist = artist;
+    let songDuration = duration;
+
+    if (!songTitle) {
+      try {
+        const songData = await this.getSong(videoId).catch(() => null);
+        if (songData) {
+          songTitle = songData.title;
+          songArtist = songData.artists?.map((a: any) => a.name).join(', ');
+          songDuration = songData.duration;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (songTitle) {
+      const fallbackResult = await fetchFromLrclib(songTitle, songArtist, songDuration);
+      if (fallbackResult && fallbackResult.lines && fallbackResult.lines.length > 0) {
+        console.log(`[LYRICS] Found fallback lyrics (${fallbackResult.lines.length} lines, synced=${fallbackResult.syncAvailable})`);
+        return fallbackResult;
+      }
+    }
+
+    return {
+      success: false,
+      code: 'LYRICS_UNAVAILABLE',
+      error: 'Lyrics not available for this song',
+    };
   }
 
   // --- RELATED SONGS ---

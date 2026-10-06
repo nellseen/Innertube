@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Music2,
   ListMusic,
+  Sparkles,
 } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -17,12 +18,14 @@ interface SidebarProps {
   currentPage: NavigationPage;
   onNavigate: (page: NavigationPage) => void;
   onCreatePlaylist: () => void;
+  onOpenAbout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentPage,
   onNavigate,
   onCreatePlaylist,
+  onOpenAbout,
 }) => {
   const { favorites, history, playlists } = useLibrary();
 
@@ -168,13 +171,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Engine status indicator */}
-        <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between px-2 text-[10px] text-white/30 font-mono">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Innertube v18
-          </span>
-          <span>Dual Audio</span>
+        {/* About Nell & Engine status indicator */}
+        <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+          {onOpenAbout && (
+            <button
+              onClick={onOpenAbout}
+              className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] hover:border-cyan-500/30 text-white/60 hover:text-white text-xs font-medium transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                <span>About Nell</span>
+              </div>
+              <span className="text-[10px] text-cyan-400/80 font-mono">@nellseen</span>
+            </button>
+          )}
+
+          <div className="flex items-center justify-between px-2 text-[10px] text-white/30 font-mono">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Innertube v18
+            </span>
+            <span>Lossless</span>
+          </div>
         </div>
       </div>
     </aside>

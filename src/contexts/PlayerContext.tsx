@@ -38,7 +38,7 @@ interface PlayerContextType {
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
   reorderQueue: (fromIndex: number, toIndex: number) => void;
-  fetchLyrics: (songId: string) => Promise<void>;
+  fetchLyrics: (songId: string, title?: string, artist?: string, duration?: number) => Promise<void>;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -199,17 +199,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   // Fetch lyrics
-  const fetchLyrics = useCallback(async (songId: string) => {
-    setIsLoadingLyrics(true);
-    try {
-      const data = await api.getLyrics(songId);
-      setLyrics(data);
-    } catch {
-      setLyrics(null);
-    } finally {
-      setIsLoadingLyrics(false);
-    }
-  }, []);
+  const fetchLyrics = useCallback(
+    async (songId: string, title?: string, artist?: string, trackDuration?: number) => {
+      setIsLoadingLyrics(true);
+      try {
+        const data = await api.getLyrics(songId, title, artist, trackDuration);
+        setLyrics(data);
+      } catch {
+        setLyrics(null);
+      } finally {
+        setIsLoadingLyrics(false);
+      }
+    },
+    []
+  );
 
   // Update MediaSession (Section 24)
   useEffect(() => {
@@ -476,7 +479,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       // Automatically fetch lyrics in background
-      fetchLyrics(song.id);
+      const artistNames = Array.isArray(song.artists)
+        ? song.artists.map((a) => a.name).join(', ')
+        : typeof (song as any).artist === 'string'
+        ? (song as any).artist
+        : '';
+      fetchLyrics(song.id, song.title, artistNames, song.duration);
 
       try {
         // Step 1: Check stream endpoint

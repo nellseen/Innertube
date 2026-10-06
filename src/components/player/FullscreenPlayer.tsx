@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronDown,
   Play,
@@ -14,6 +14,9 @@ import {
   Mic2,
   ListMusic,
   Share2,
+  RefreshCw,
+  ExternalLink,
+  Radio,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -54,11 +57,93 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
     cycleRepeat,
     playSong,
     removeFromQueue,
+    fetchLyrics,
   } = usePlayer();
 
   const { isFavorite, toggleFavorite } = useLibrary();
   const [activeTab, setActiveTab] = useState<'artwork' | 'lyrics' | 'queue'>('artwork');
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeLineRef = useRef<HTMLDivElement | null>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeoutRef = useRef<any>(null);
+
+  const artistName = useMemo(() => {
+    if (!currentTrack) return 'Unknown Artist';
+    return Array.isArray(currentTrack.artists)
+      ? currentTrack.artists.map((a) => a.name).join(', ')
+      : typeof (currentTrack as any).artist === 'string'
+      ? (currentTrack as any).artist
+      : 'Unknown Artist';
+  }, [currentTrack]);
+
+  // Determine active lyrics line index
+  const activeLineIndex = useMemo(() => {
+    if (!lyrics?.lines || lyrics.lines.length === 0) return -1;
+    const currentMs = currentTime * 1000;
+
+    const hasTimestamps = lyrics.lines.some((l) => typeof l.startMs === 'number');
+
+    if (hasTimestamps) {
+      let index = -1;
+      for (let i = 0; i < lyrics.lines.length; i++) {
+        const line = lyrics.lines[i];
+        if (line.startMs !== undefined && line.startMs <= currentMs) {
+          index = i;
+        } else if (line.startMs !== undefined && line.startMs > currentMs) {
+          break;
+        }
+      }
+      return index >= 0 ? index : 0;
+    }
+
+    // Progression estimation for plain lyrics based on duration
+    if (duration > 0 && currentTime > 0) {
+      const progress = Math.min(1, Math.max(0, currentTime / duration));
+      return Math.min(lyrics.lines.length - 1, Math.floor(progress * lyrics.lines.length));
+    }
+
+    return 0;
+  }, [currentTime, duration, lyrics]);
+
+  // Smooth auto-scroll to active line
+  useEffect(() => {
+    if (
+      activeTab === 'lyrics' &&
+      activeLineIndex >= 0 &&
+      activeLineRef.current &&
+      !isUserScrolling &&
+      lyricsContainerRef.current
+    ) {
+      activeLineRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeLineIndex, isUserScrolling, activeTab]);
+
+  const handleScroll = () => {
+    setIsUserScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 4000);
+  };
+
+  const handleResumeSync = () => {
+    setIsUserScrolling(false);
+    if (activeLineRef.current) {
+      activeLineRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  };
+
+  const handleRetryLyrics = () => {
+    if (currentTrack) {
+      fetchLyrics(currentTrack.id, currentTrack.title, artistName, currentTrack.duration);
+    }
+  };
 
   if (!isOpen || !currentTrack) return null;
 
@@ -172,29 +257,88 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
         {activeTab === 'lyrics' && (
           <div
             ref={lyricsContainerRef}
-            className="w-full h-full max-h-[500px] overflow-y-auto px-4 py-8 flex flex-col items-center text-center gap-5 custom-scrollbar"
+            onScroll={handleScroll}
+            className="w-full h-full max-h-[500px] overflow-y-auto px-4 py-8 flex flex-col items-center text-center gap-4 custom-scrollbar relative"
           >
+            {/* Sync control button when user scrolled away */}
+            {isUserScrolling && lyrics?.lines && lyrics.lines.length > 0 && (
+              <div className="sticky top-0 z-20 mb-2">
+                <button
+                  onClick={handleResumeSync}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-xs font-semibold shadow-lg backdrop-blur-md transition-all active:scale-95"
+                >
+                  <Radio className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+                  <span>Resume Sync</span>
+                </button>
+              </div>
+            )}
+
             {isLoadingLyrics ? (
               <div className="flex flex-col items-center gap-3 text-white/40 my-auto">
-                <span className="w-6 h-6 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
-                <p className="text-sm">Fetching lyrics from YouTube...</p>
+                <span className="w-7 h-7 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
+                <p className="text-sm font-mono">Synchronizing lyrics...</p>
               </div>
             ) : lyrics?.lines && lyrics.lines.length > 0 ? (
-              lyrics.lines.map((line, idx) => (
-                <p
-                  key={idx}
-                  className="text-lg sm:text-2xl font-semibold text-white/80 hover:text-white transition-colors cursor-default"
-                >
-                  {line.text}
-                </p>
-              ))
+              <div className="flex flex-col gap-6 py-10 w-full max-w-2xl">
+                {lyrics.lines.map((line, idx) => {
+                  const isActive = idx === activeLineIndex;
+                  const hasTimestamp = typeof line.startMs === 'number';
+
+                  return (
+                    <div
+                      key={idx}
+                      ref={isActive ? (activeLineRef as any) : null}
+                      onClick={() => {
+                        if (hasTimestamp && line.startMs !== undefined) {
+                          seek(line.startMs / 1000);
+                          setIsUserScrolling(false);
+                        }
+                      }}
+                      className={`transition-all duration-300 px-4 py-2 rounded-2xl ${
+                        hasTimestamp ? 'cursor-pointer' : 'cursor-default'
+                      } ${
+                        isActive
+                          ? 'text-white font-extrabold text-2xl sm:text-4xl scale-105 bg-white/[0.04] shadow-sm'
+                          : 'text-white/40 hover:text-white/70 text-lg sm:text-2xl font-semibold'
+                      }`}
+                    >
+                      <p className="leading-relaxed tracking-normal">{line.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <div className="my-auto text-center text-white/40">
-                <Mic2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-base font-medium">Lyrics not available</p>
-                <p className="text-xs text-white/20 mt-1">
-                  Instrumental or no official lyrics provided upstream
+              /* Graceful Fallback Card */
+              <div className="my-auto py-12 text-center flex flex-col items-center justify-center max-w-md mx-auto">
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-4 text-cyan-400/60 shadow-xl">
+                  <Mic2 className="w-10 h-10 opacity-40" />
+                </div>
+                <h4 className="text-lg font-bold text-white mb-1">Lyrics Unavailable</h4>
+                <p className="text-xs sm:text-sm text-white/40 max-w-sm mb-6 leading-relaxed">
+                  Official lyrics could not be synchronized for this track. You can retry retrieval or search online.
                 </p>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-xs">
+                  <button
+                    onClick={handleRetryLyrics}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Retry Fetching
+                  </button>
+
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent(
+                      `${currentTrack.title} ${artistName} lyrics`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-white/70 hover:text-white text-xs font-medium border border-white/[0.05] transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Search Google
+                  </a>
+                </div>
               </div>
             )}
           </div>

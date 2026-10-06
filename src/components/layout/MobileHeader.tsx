@@ -1,15 +1,17 @@
 import React from 'react';
-import { Music2, Search } from 'lucide-react';
+import { Music2, Search, Sparkles } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 
 interface MobileHeaderProps {
   onSearchClick: () => void;
   currentPage: NavigationPage;
+  onOpenAbout?: () => void;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onSearchClick,
   currentPage,
+  onOpenAbout,
 }) => {
   const getTitle = () => {
     switch (currentPage.name) {
@@ -43,12 +45,26 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         <h2 className="text-base font-bold text-white tracking-tight">{getTitle()}</h2>
       </div>
 
-      <button
-        onClick={onSearchClick}
-        className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
-      >
-        <Search className="w-4 h-4" />
-      </button>
+      <div className="flex items-center gap-2">
+        {onOpenAbout && (
+          <button
+            onClick={onOpenAbout}
+            className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center text-cyan-400 hover:text-white transition-colors"
+            title="About Nell"
+            aria-label="About Nell"
+          >
+            <Sparkles className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          onClick={onSearchClick}
+          className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+          title="Search"
+          aria-label="Search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+      </div>
     </header>
   );
 };

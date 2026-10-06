@@ -87,6 +87,10 @@ router.get('/stream/:videoId/refresh', (req, res) => handleStream(req, res, true
 // GET /api/song/:videoId/lyrics
 router.get('/song/:videoId/lyrics', async (req: Request, res: Response) => {
   const { videoId } = req.params;
+  const title = (req.query.title as string || '').trim();
+  const artist = (req.query.artist as string || '').trim();
+  const duration = req.query.duration ? parseInt(req.query.duration as string, 10) : undefined;
+
   if (!isValidVideoId(videoId)) {
     return res.status(400).json({
       success: false,
@@ -96,14 +100,14 @@ router.get('/song/:videoId/lyrics', async (req: Request, res: Response) => {
     });
   }
 
-  const cacheKey = `lyrics_${videoId}`;
+  const cacheKey = `lyrics_${videoId}_${title || ''}`;
   const cached = appCache.get<any>(cacheKey);
   if (cached) {
     return res.json(cached);
   }
 
   try {
-    const lyrics = await innertubeService.getLyrics(videoId);
+    const lyrics = await innertubeService.getLyrics(videoId, title, artist, duration);
     if (lyrics.success) {
       appCache.set(cacheKey, lyrics, 24 * 60 * 60 * 1000); // 24 hours
     }

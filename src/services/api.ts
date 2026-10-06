@@ -109,8 +109,18 @@ export const api = {
     return request(path);
   },
 
-  async getLyrics(videoId: string): Promise<LyricsResponse> {
-    return request(`/song/${videoId}/lyrics`);
+  async getLyrics(
+    videoId: string,
+    title?: string,
+    artist?: string,
+    duration?: number
+  ): Promise<LyricsResponse> {
+    const params = new URLSearchParams();
+    if (title) params.set('title', title);
+    if (artist) params.set('artist', artist);
+    if (duration && duration > 0) params.set('duration', Math.round(duration).toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request(`/song/${videoId}/lyrics${query}`);
   },
 
   async getRelated(videoId: string): Promise<{ success: boolean; items: Song[] }> {
