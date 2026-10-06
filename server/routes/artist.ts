@@ -4,6 +4,31 @@ import { appCache } from '../cache.js';
 
 const router = Router();
 
+// GET /api/artists/popular or /api/artist/popular
+const handlePopularArtists = async (req: Request, res: Response) => {
+  const cacheKey = 'popular_artists_list';
+  const cached = appCache.get<any>(cacheKey);
+  if (cached) {
+    return res.json({ success: true, artists: cached });
+  }
+
+  try {
+    const artists = await innertubeService.getPopularArtists();
+    appCache.set(cacheKey, artists, 60 * 60 * 1000); // 1 hour cache
+    return res.json({ success: true, artists });
+  } catch (err: any) {
+    console.error('[ERROR] /api/artists/popular failed:', err?.message || err);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_ERROR',
+      error: 'Failed to fetch popular artists',
+    });
+  }
+};
+
+router.get('/artists/popular', handlePopularArtists);
+router.get('/artist/popular', handlePopularArtists);
+
 // GET /api/artist/:artistId
 router.get('/artist/:artistId', async (req: Request, res: Response) => {
   const { artistId } = req.params;

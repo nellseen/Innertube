@@ -146,6 +146,10 @@ export const api = {
     return request(`/artist/${artistId}/albums`);
   },
 
+  async getPopularArtists(): Promise<{ success: boolean; artists: Artist[] }> {
+    return request('/artists/popular');
+  },
+
   // Album
   async getAlbum(albumId: string): Promise<{ success: boolean; album: Album; tracks: Song[] }> {
     return request(`/album/${albumId}`);

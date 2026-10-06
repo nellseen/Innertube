@@ -842,6 +842,110 @@ export class InnertubeService {
     };
   }
 
+  // --- POPULAR ARTISTS ---
+  async getPopularArtists(): Promise<ArtistItem[]> {
+    const curated: ArtistItem[] = [
+      {
+        id: 'UCPC0L1d253x-KuMNwa05TpA',
+        name: 'Taylor Swift',
+        thumbnail: 'https://yt3.googleusercontent.com/RCpTA6EXJQyjVFDosWOKa2SMmqkua_lA9mHPDWWciLwgqpZLz-k8rXWRF_367trrQ7up9BUwCbk6kRk=w300-h300-p-l90-rj',
+        subscribers: '431M monthly audience',
+      },
+      {
+        id: 'UClYV6hHlupm_S_ObS1W-DYw',
+        name: 'The Weeknd',
+        thumbnail: 'https://lh3.googleusercontent.com/U-SAmNOu4TynE818gLCfKsuHZ0U5YNEtO9mrjSI9WCCKERs98LzrCal5kajBBTQNwdcisoB2Bn-pHp4=w300-h300-p-l90-rj',
+        subscribers: '236M monthly audience',
+      },
+      {
+        id: 'UCERrDZ8oN0U_n9MphMKERcg',
+        name: 'Billie Eilish',
+        thumbnail: 'https://lh3.googleusercontent.com/tQC4rOL6xz6FhmFr0ggQExxyGbYSOsyveXVSnPBh2WjEyIzQ9pMHablLJ-0GlMBrLBlBrbWQGmzrV6KN=w300-h300-p-l90-rj',
+        subscribers: '325M monthly audience',
+      },
+      {
+        id: 'UCZn4r7heNOPY-C43YIywnVA',
+        name: 'Bruno Mars',
+        thumbnail: 'https://lh3.googleusercontent.com/hnefGBrazRhn4Z92bdSZBUENl40ONjRiVDsmZKZh-WZ2iCKE-2c7KKR7SNcZfzLHoRyB3E6as8L87YA=w300-h300-p-l90-rj',
+        subscribers: '614M monthly audience',
+      },
+      {
+        id: 'UC0076UMUgEng8HORUw_MYHA',
+        name: 'Ariana Grande',
+        thumbnail: 'https://yt3.googleusercontent.com/DU6Kpr5TYKcW6QHvMnsJau5_8QSuix8LCLtf5UEaziZZdXw8SxvcxJ9YWmVIQuzhg2R-MVHYgjdGCQ=w300-h300-p-l90-rj',
+        subscribers: '241M monthly audience',
+      },
+      {
+        id: 'UCU6cE7pdJPc6DU2jSrKEsdQ',
+        name: 'Drake',
+        thumbnail: 'https://yt3.googleusercontent.com/MxNjcRJ-uK4Xvx7u90IhEFLQM8x9LIGTA9VCKHq5U4Wn2jOgiWaMtg-qz329SIzqnCyhdCCB3MpdAGs=w300-h300-p-l90-rj',
+        subscribers: '132M monthly audience',
+      },
+      {
+        id: 'UClmXPfaYhXOYsNn_QUyheWQ',
+        name: 'Ed Sheeran',
+        thumbnail: 'https://lh3.googleusercontent.com/jQoBIAS6JjFGpcqQY1M_Mh3AasOvFENCdVRxkgax1a0K6qiq7AgE3MbJ6Jtt-Jndcarvoawmrg66KTny=w300-h300-p-l90-rj',
+        subscribers: '221M monthly audience',
+      },
+      {
+        id: 'UCzVb0SIXp9q9PeKCcFjsBtA',
+        name: 'Dua Lipa',
+        thumbnail: 'https://lh3.googleusercontent.com/aFx8s1fTuelgxONGbezmTG0EKR8r82uB5H-Q6ZJtssyCWLJWF8GfZNr4tHo84sXdFCPBKrA4R6zXOss=w300-h300-p-l90-rj',
+        subscribers: '442M monthly audience',
+      },
+      {
+        id: 'UCprAFmT0C6O4X0ToEXpeFTQ',
+        name: 'Kendrick Lamar',
+        thumbnail: 'https://yt3.googleusercontent.com/uB8Magh99SvDyT_mcDYeNYxlVZ_F9WN-cJtAFMHw_Q-_N_8y5-uZiay8-EZSKKloNoWxymBzVehSF4PN=w300-h300-p-l90-rj',
+        subscribers: '155M monthly audience',
+      },
+      {
+        id: 'UCIaFw5VBEK8qaW6nRpx_qnw',
+        name: 'Coldplay',
+        thumbnail: 'https://lh3.googleusercontent.com/IOKuXtp8PCQ_Fc-vaRKm3sKIXBxFV51gZheLTH5br-YGnWHFQf_Jywcuk7wbprYRoEbQyS_XZY6-nMJX=w300-h300-p-l90-rj',
+        subscribers: '320M monthly audience',
+      },
+      {
+        id: 'UCz51ZodJbYUNfkdPHOjJKKw',
+        name: 'Sabrina Carpenter',
+        thumbnail: 'https://lh3.googleusercontent.com/FMh1mOI0ufvUCAkbUM6aUmU5WK7O5PnndyyXKP1-DCEip20SQz5eeYn3lZ29p-ASb-19ZfBVc_NKe5Ko=w300-h300-p-l90-rj',
+        subscribers: '174M monthly audience',
+      },
+      {
+        id: 'UCyD3XWRK9ko-izf2nBSFitw',
+        name: 'Post Malone',
+        thumbnail: 'https://lh3.googleusercontent.com/48LfK4z6o-CCEWgHQnQfg0ltcT9tbZSN0qjSh0FSJsJI5GF48j2-pH219ciG1ML-PI80ZGD4Vz6sjg=w300-h300-p-l90-rj',
+        subscribers: '367M monthly audience',
+      },
+      {
+        id: 'UCGvj8kfUV5Q6lzECIrGY19g',
+        name: 'Justin Bieber',
+        thumbnail: 'https://lh3.googleusercontent.com/4ULlRiFBFglNemZJyKn6_e2-iOIdJEbgBgq_79RQclndG6pge0yGgS2k2On6E1FkCJzenyHkHRzkvjFp=w300-h300-p-l90-rj',
+        subscribers: '531M monthly audience',
+      },
+      {
+        id: 'UCeKDV9JgivrXehVluw5bKFA',
+        name: 'SZA',
+        thumbnail: 'https://lh3.googleusercontent.com/c-ILO8kXxjY6HhqSkoClWPUtPfHYQW6iHr51EiQOaZiUZ7IZr_WwwkyqclAOFyZgLpC3R0dPXuZiRt0=w300-h300-p-l90-rj',
+        subscribers: '91.8M monthly audience',
+      },
+      {
+        id: 'UCf_gP4AMRSgAfyzbkeS9k4g',
+        name: 'Travis Scott',
+        thumbnail: 'https://yt3.googleusercontent.com/r9k_FpAswxhQnl_cudiaT2ocWFccR6SzEFXgZ9a12iR5eDPSILlIL2EQewyQ-yYSt1JFyH1pqnoBXxs=w300-h300-p-l90-rj',
+        subscribers: '114M monthly audience',
+      },
+      {
+        id: 'UCE5XNpliPM-SmyFEp61tL_g',
+        name: 'Olivia Rodrigo',
+        thumbnail: 'https://yt3.googleusercontent.com/41-4WZupE4yY88igineZefzBZ3ud2nrtlBMv61OBWOfOcATol8PhmI5OZ0fLlrTszyZ3Ul9I9sE=w300-h300-l90-rj-dcqUWI7R0J',
+        subscribers: '192M monthly audience',
+      },
+    ];
+
+    return curated;
+  }
+
   // --- ARTIST SONGS (NO ARTIFICIAL LIMIT) ---
   async getArtistSongs(
     artistId: string,

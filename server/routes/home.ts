@@ -14,6 +14,24 @@ router.get('/home', async (req: Request, res: Response) => {
 
   try {
     const sections = await innertubeService.getHomeFeed();
+    try {
+      const popularArtists = await innertubeService.getPopularArtists();
+      const hasArtistSection = sections.some(
+        (s) => s.type === 'artists' || s.title?.toLowerCase().includes('artist')
+      );
+      if (!hasArtistSection && popularArtists.length > 0) {
+        // Place right after first section (e.g. Quick picks or New releases)
+        const insertIdx = sections.length > 0 ? 1 : 0;
+        sections.splice(insertIdx, 0, {
+          title: 'Popular Artists',
+          type: 'artists',
+          items: popularArtists,
+        });
+      }
+    } catch (e) {
+      console.warn('[WARN] Failed to inject popular artists into home feed:', e);
+    }
+
     appCache.set(cacheKey, sections, 10 * 60 * 1000); // 10 mins TTL
     return res.json({ success: true, sections });
   } catch (err: any) {

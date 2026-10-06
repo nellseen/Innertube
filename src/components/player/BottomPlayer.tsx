@@ -108,11 +108,11 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             {currentTrack.title}
           </h4>
           <p className="text-xs text-white/40 truncate mt-0.5">
-            {(Array.isArray(currentTrack.artists)
+            {((Array.isArray(currentTrack.artists)
               ? currentTrack.artists
               : typeof (currentTrack as any).artist === 'string'
               ? [{ name: (currentTrack as any).artist }]
-              : [{ name: 'Unknown Artist' }]
+              : [{ name: 'Unknown Artist' }]) as { id?: string; name: string }[]
             ).map((a, i, arr) => (
               <span
                 key={i}
