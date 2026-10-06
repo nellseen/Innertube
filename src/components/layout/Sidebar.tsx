@@ -42,14 +42,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Glass container */}
       <div className="flex-1 flex flex-col rounded-3xl bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden p-4">
         {/* Brand */}
-        <div className="flex items-center gap-3 px-3 py-4 mb-2">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 p-[1.5px] shadow-lg shadow-cyan-500/20">
-            <div className="w-full h-full bg-[#0D0F18] rounded-[14px] flex items-center justify-center">
-              <Music2 className="w-5 h-5 text-cyan-400 animate-pulse" />
+        <div
+          onClick={onOpenAbout}
+          className="flex items-center gap-3 px-3 py-4 mb-2 cursor-pointer group"
+          title="Lihat Profil Nell (@nellseen)"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 p-[1.5px] shadow-lg shadow-cyan-500/20 shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+            <div className="w-full h-full bg-[#0D0F18] rounded-[14px] flex items-center justify-center overflow-hidden">
+              <img
+                src="/logo.webp"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://files.catbox.moe/91lpa1.webp';
+                }}
+                alt="Aetheria"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
             </div>
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
+            <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent group-hover:text-cyan-300 transition-colors">
               Aetheria
             </h1>
             <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">

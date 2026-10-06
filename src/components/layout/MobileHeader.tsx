@@ -36,10 +36,21 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#090A0F]/80 backdrop-blur-xl border-b border-white/[0.08]">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-rose-500 p-[1px]">
-          <div className="w-full h-full bg-[#0D0F18] rounded-[11px] flex items-center justify-center">
-            <Music2 className="w-4 h-4 text-cyan-400" />
+      <div
+        onClick={onOpenAbout}
+        className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+        title="Lihat Profil Nell"
+      >
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-rose-500 p-[1px] shrink-0 overflow-hidden shadow-md">
+          <div className="w-full h-full bg-[#0D0F18] rounded-[11px] flex items-center justify-center overflow-hidden">
+            <img
+              src="/logo.webp"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = 'https://files.catbox.moe/91lpa1.webp';
+              }}
+              alt="Aetheria"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
         <h2 className="text-base font-bold text-white tracking-tight">{getTitle()}</h2>

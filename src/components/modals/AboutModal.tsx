@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Github, Sparkles, Music2, Code2, Heart, ExternalLink, Disc3, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Github, Sparkles, Music2, Code2, Heart, ExternalLink, Disc3, ShieldCheck, ZoomIn } from 'lucide-react';
+import { PhotoViewerModal } from './PhotoViewerModal.js';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -7,50 +8,74 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+  const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
+
   if (!isOpen) return null;
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
-    >
+    <>
       <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg rounded-3xl bg-[#0D0F18]/95 backdrop-blur-2xl border border-white/10 p-6 sm:p-8 shadow-[0_16px_48px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-200 select-none overflow-hidden"
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
       >
-        {/* Ambient Top Glow */}
-        <div className="absolute -top-24 -left-24 w-60 h-60 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-60 h-60 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
-          aria-label="Close"
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-lg rounded-3xl bg-[#0D0F18]/95 backdrop-blur-2xl border border-white/10 p-6 sm:p-8 shadow-[0_16px_48px_rgba(0,0,0,0.7)] animate-in zoom-in-95 duration-200 select-none overflow-hidden"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Ambient Top Glow */}
+          <div className="absolute -top-24 -left-24 w-60 h-60 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-60 h-60 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
 
-        {/* Header Profile */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 p-[2px] shadow-lg shadow-cyan-500/20 shrink-0">
-            <div className="w-full h-full bg-[#0D0F18] rounded-[14px] flex items-center justify-center overflow-hidden">
-              <span className="text-xl font-extrabold bg-gradient-to-br from-cyan-300 via-white to-indigo-300 bg-clip-text text-transparent">
-                N
-              </span>
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-5 right-5 p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Header Profile */}
+          <div className="flex items-center gap-4 mb-6">
+            {/* Interactive Avatar button */}
+            <div
+              onClick={() => setIsPhotoViewerOpen(true)}
+              className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-rose-500 p-[2px] shadow-lg shadow-cyan-500/20 shrink-0 cursor-pointer group transition-transform duration-200 hover:scale-105 active:scale-95"
+              title="Ketuk untuk melihat foto profil penuh"
+            >
+              <div className="w-full h-full bg-[#0D0F18] rounded-[14px] flex items-center justify-center overflow-hidden relative">
+                <img
+                  src="/logo.webp"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = 'https://files.catbox.moe/91lpa1.webp';
+                  }}
+                  alt="Nell Profile"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                {/* Hover inspect overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                  <ZoomIn className="w-5 h-5 text-white drop-shadow-md" />
+                </div>
+              </div>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-bold text-white tracking-tight">Nell</h3>
+                <span className="text-xs text-cyan-400 font-mono">@nellseen</span>
+              </div>
+              <p className="text-xs text-white/50 mt-0.5">
+                Creator of the Innertube Music Engine & Developer
+              </p>
+              <button
+                onClick={() => setIsPhotoViewerOpen(true)}
+                className="mt-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition-colors group"
+              >
+                <ZoomIn className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                <span>Lihat foto profil</span>
+              </button>
             </div>
           </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-white tracking-tight">Nell</h3>
-              <span className="text-xs text-cyan-400 font-mono">@nellseen</span>
-            </div>
-            <p className="text-xs text-white/50 mt-0.5">
-              Creator of the Innertube Music Engine & Developer
-            </p>
-          </div>
-        </div>
 
         {/* Bio / Story */}
         <div className="space-y-3 mb-6 text-xs sm:text-sm text-white/70 leading-relaxed">
@@ -123,5 +148,15 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         </div>
       </div>
     </div>
+
+    {/* Fullscreen Profile Photo Viewer */}
+    <PhotoViewerModal
+      isOpen={isPhotoViewerOpen}
+      onClose={() => setIsPhotoViewerOpen(false)}
+      name="Nell"
+      username="@nellseen"
+      subtitle="Creator of Innertube Music Engine & Developer"
+    />
+  </>
   );
 };
