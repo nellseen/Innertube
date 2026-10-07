@@ -761,6 +761,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       navigator.mediaSession.setActionHandler('pause', () => togglePlay());
       navigator.mediaSession.setActionHandler('previoustrack', () => previous());
       navigator.mediaSession.setActionHandler('nexttrack', () => next());
+      navigator.mediaSession.setActionHandler('stop', () => {
+        if (isPlaying) togglePlay();
+        seek(0);
+      });
       navigator.mediaSession.setActionHandler('seekto', (details) => {
         if (typeof details.seekTime === 'number') seek(details.seekTime);
       });
@@ -775,7 +779,30 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (e) {
       console.warn('Failed to bind MediaSession action handler', e);
     }
-  }, [togglePlay, previous, next, seek, currentTime, duration]);
+  }, [togglePlay, previous, next, seek, currentTime, duration, isPlaying]);
+
+  // Update MediaSession Position State (Timeline scrubber on lock screen & OS media controls)
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !('mediaSession' in navigator) ||
+      !('setPositionState' in navigator.mediaSession) ||
+      !duration ||
+      duration <= 0
+    ) {
+      return;
+    }
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: Math.max(0, duration),
+        playbackRate: 1,
+        position: Math.min(Math.max(0, currentTime), duration),
+      });
+    } catch (e) {
+      // Safe fallback if audio is transitioning
+    }
+  }, [currentTime, duration]);
 
   return (
     <PlayerContext.Provider
