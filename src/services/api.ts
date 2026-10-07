@@ -187,4 +187,30 @@ export const api = {
     const params = continuation ? `?continuation=${encodeURIComponent(continuation)}` : '';
     return request(`/playlist/${playlistId}${params}`);
   },
+
+  // Chords
+  async getChord(params: {
+    q?: string;
+    videoId?: string;
+    title?: string;
+    artist?: string;
+  }): Promise<{
+    success: boolean;
+    song?: {
+      id?: string;
+      title: string;
+      artist: string;
+      thumbnail?: string;
+    };
+    originalKey?: string;
+    content: string;
+    source?: 'gemini' | 'curated' | 'algorithmic';
+  }> {
+    const query = new URLSearchParams();
+    if (params.q) query.set('q', params.q);
+    if (params.videoId) query.set('videoId', params.videoId);
+    if (params.title) query.set('title', params.title);
+    if (params.artist) query.set('artist', params.artist);
+    return request(`/chord?${query.toString()}`);
+  },
 };

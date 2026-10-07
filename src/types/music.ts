@@ -104,12 +104,26 @@ export interface CustomPlaylist {
   createdAt: number;
 }
 
+export interface ChordResponse {
+  success: boolean;
+  song?: {
+    id?: string;
+    title: string;
+    artist: string;
+    thumbnail?: string;
+  };
+  originalKey?: string;
+  content: string;
+  source?: 'gemini' | 'curated' | 'algorithmic';
+  error?: string;
+}
+
 export type NavigationPage =
   | { name: 'home' }
   | { name: 'trending' }
   | { name: 'search'; initialQuery?: string }
   | { name: 'scene' }
-  | { name: 'chords' }
+  | { name: 'chords'; song?: Song; initialQuery?: string }
   | { name: 'library'; tab?: 'favorites' | 'history' | 'playlists' }
   | { name: 'artist'; id: string }
   | { name: 'album'; id: string }

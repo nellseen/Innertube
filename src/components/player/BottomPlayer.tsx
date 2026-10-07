@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   FastForward,
   X,
+  Guitar,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -30,6 +31,7 @@ interface BottomPlayerProps {
   isLyricsOpen: boolean;
   onNavigateToArtist?: (artistId: string) => void;
   onNavigateToScene?: () => void;
+  onNavigateToChords?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -47,6 +49,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
   isLyricsOpen,
   onNavigateToArtist,
   onNavigateToScene,
+  onNavigateToChords,
 }) => {
   const {
     currentTrack,
@@ -332,6 +335,17 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             title="Media Scene Visualizer"
           >
             <Waves className="w-4 h-4 text-purple-400" />
+          </button>
+        )}
+
+        {/* Chord & Tab toggle */}
+        {onNavigateToChords && (
+          <button
+            onClick={onNavigateToChords}
+            className="p-2 rounded-full text-white/40 hover:text-amber-300 hover:bg-white/10 transition-colors"
+            title="Chord & Tab Lagu Ini"
+          >
+            <Guitar className="w-4 h-4 text-amber-400" />
           </button>
         )}
 

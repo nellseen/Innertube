@@ -58,7 +58,13 @@ function AppContent() {
       case 'scene':
         return <MediaScenePage onNavigate={navigateTo} />;
       case 'chords':
-        return <ChordPage onNavigate={navigateTo} />;
+        return (
+          <ChordPage
+            initialSong={currentPage.song}
+            initialQuery={currentPage.initialQuery}
+            onNavigate={navigateTo}
+          />
+        );
       case 'artist':
         return <ArtistPage artistId={currentPage.id} onNavigate={navigateTo} />;
       case 'album':
@@ -145,6 +151,7 @@ function AppContent() {
         isLyricsOpen={isLyricsOpen}
         onNavigateToArtist={(id) => navigateTo({ name: 'artist', id })}
         onNavigateToScene={() => navigateTo({ name: 'scene' })}
+        onNavigateToChords={() => navigateTo({ name: 'chords' })}
       />
 
       {/* Mobile Floating Mini Player */}

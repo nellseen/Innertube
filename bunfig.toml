@@ -1,0 +1,6 @@
+# Bun configuration file
+[install]
+cache = true
+
+[run]
+preload = []

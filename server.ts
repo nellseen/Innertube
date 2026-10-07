@@ -9,6 +9,7 @@ import songRoute from './server/routes/song.js';
 import artistRoute from './server/routes/artist.js';
 import albumRoute from './server/routes/album.js';
 import playlistRoute from './server/routes/playlist.js';
+import chordRoute from './server/routes/chord.js';
 import { innertubeService } from './server/innertube.js';
 import { appCache } from './server/cache.js';
 
@@ -40,6 +41,7 @@ app.use('/api', songRoute);
 app.use('/api', artistRoute);
 app.use('/api', albumRoute);
 app.use('/api', playlistRoute);
+app.use('/api', chordRoute);
 
 // Standard JSON Error handler
 app.use('/api', (err: any, req: Request, res: Response, next: NextFunction) => {
