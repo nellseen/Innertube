@@ -7,6 +7,7 @@ import type {
   HomeSection,
   LyricsResponse,
   StreamResponse,
+  SponsorBlockResponse,
 } from '../types/music.js';
 
 const BASE_URL = '/api';
@@ -121,6 +122,13 @@ export const api = {
     if (duration && duration > 0) params.set('duration', Math.round(duration).toString());
     const query = params.toString() ? `?${params.toString()}` : '';
     return request(`/song/${videoId}/lyrics${query}`);
+  },
+
+  async getSponsorBlockSegments(videoId: string): Promise<SponsorBlockResponse> {
+    return request<SponsorBlockResponse>(`/song/${videoId}/sponsorblock`).catch(() => ({
+      success: true,
+      segments: [],
+    }));
   },
 
   async getRelated(videoId: string): Promise<{ success: boolean; items: Song[] }> {

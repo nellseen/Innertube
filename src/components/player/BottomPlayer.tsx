@@ -15,6 +15,9 @@ import {
   Maximize2,
   Sparkles,
   Waves,
+  ShieldCheck,
+  FastForward,
+  X,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -55,6 +58,12 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
     repeatMode,
     isShuffle,
     isBuffering,
+    sponsorBlockSegments,
+    isSponsorBlockEnabled,
+    toggleSponsorBlock,
+    sponsorBlockNotice,
+    dismissSponsorBlockNotice,
+    undoSponsorBlockSkip,
     togglePlay,
     seek,
     setVolume,
@@ -87,6 +96,27 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
 
   return (
     <div className="hidden md:flex fixed bottom-3 left-4 right-4 z-50 h-22 rounded-3xl bg-[#090A0F]/85 backdrop-blur-3xl border border-white/[0.1] shadow-[0_12px_48px_rgba(0,0,0,0.6)] items-center px-5 gap-4 select-none">
+      {/* SponsorBlock Auto-Skip Toast Notification */}
+      {sponsorBlockNotice && (
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-200 text-xs shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom duration-200">
+          <FastForward className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>Skipped {sponsorBlockNotice.category}</span>
+          <button
+            onClick={undoSponsorBlockSkip}
+            className="ml-1 text-[11px] font-bold text-amber-300 hover:text-white underline cursor-pointer"
+          >
+            Undo
+          </button>
+          <button
+            onClick={dismissSponsorBlockNotice}
+            className="ml-1 p-0.5 rounded text-amber-300/60 hover:text-white cursor-pointer"
+            aria-label="Dismiss notice"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* Track Info (Left) */}
       <div className="flex items-center gap-3.5 w-1/4 min-w-[200px]">
         <div
@@ -218,6 +248,21 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
           >
             {/* Background rail */}
             <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden relative group-hover/scrub:h-1.5 transition-all">
+              {/* SponsorBlock Segment Markers */}
+              {isSponsorBlockEnabled &&
+                duration > 0 &&
+                sponsorBlockSegments.map((seg, idx) => (
+                  <div
+                    key={idx}
+                    title={`SponsorBlock: ${seg.category} (${formatTime(seg.start)} - ${formatTime(seg.end)})`}
+                    className="absolute top-0 bottom-0 bg-amber-400/80 z-10 pointer-events-none rounded-full"
+                    style={{
+                      left: `${(seg.start / duration) * 100}%`,
+                      width: `${Math.max(0.6, ((seg.end - seg.start) / duration) * 100)}%`,
+                    }}
+                  />
+                ))}
+
               {/* Loaded bar */}
               <div
                 className="h-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-rose-400 rounded-full"
@@ -257,6 +302,27 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
           <Sparkles className="w-3 h-3 text-cyan-400" />
           <span>High Quality</span>
         </div>
+
+        {/* SponsorBlock toggle */}
+        <button
+          onClick={toggleSponsorBlock}
+          className={`p-2 rounded-full transition-colors flex items-center justify-center ${
+            isSponsorBlockEnabled
+              ? sponsorBlockSegments.length > 0
+                ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10'
+                : 'text-cyan-400/80 hover:text-cyan-300'
+              : 'text-white/20 hover:text-white/40'
+          }`}
+          title={
+            isSponsorBlockEnabled
+              ? sponsorBlockSegments.length > 0
+                ? `SponsorBlock Active (${sponsorBlockSegments.length} non-music segments detected)`
+                : 'SponsorBlock Active (Auto-skip non-music segments)'
+              : 'SponsorBlock Disabled (Click to enable)'
+          }
+        >
+          <ShieldCheck className="w-4 h-4" />
+        </button>
 
         {/* Media Scene toggle */}
         {onNavigateToScene && (

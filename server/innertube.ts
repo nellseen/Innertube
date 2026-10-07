@@ -944,8 +944,8 @@ export class InnertubeService {
               syncAvailable: true,
               hasTranslation: false,
               hasRomaji: false,
-              source: 'lrclib',
-              sourceName: 'LRCLIB',
+              source: 'lrcget',
+              sourceName: 'LrcGet / LRCLIB',
             };
           }
         }
@@ -964,9 +964,62 @@ export class InnertubeService {
               syncAvailable: false,
               hasTranslation: false,
               hasRomaji: false,
-              source: 'lrclib',
-              sourceName: 'LRCLIB',
+              source: 'lrcget',
+              sourceName: 'LrcGet / LRCLIB',
             };
+          }
+        }
+
+        // If exact /api/get didn't yield lyrics, use LrcGet fuzzy search API (/api/search)
+        const searchQuery = `${cleanTitle} ${cleanArtist}`.trim();
+        const searchRes = await fetch(
+          `https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`,
+          {
+            headers: { 'User-Agent': 'Aetheria-Music/1.0 (LrcGet-Client)' },
+            signal: AbortSignal.timeout(4500),
+          }
+        ).catch(() => null);
+
+        if (searchRes && searchRes.ok) {
+          const searchData: any = await searchRes.json().catch(() => null);
+          if (Array.isArray(searchData) && searchData.length > 0) {
+            const syncedCandidate = searchData.find((item: any) => !!item.syncedLyrics);
+            if (syncedCandidate) {
+              const parsed = parseLRC(syncedCandidate.syncedLyrics);
+              if (parsed.length > 0) {
+                return {
+                  success: true,
+                  type: 'synced',
+                  lines: parsed,
+                  syncAvailable: true,
+                  hasTranslation: false,
+                  hasRomaji: false,
+                  source: 'lrcget',
+                  sourceName: 'LrcGet / LRCLIB',
+                };
+              }
+            }
+
+            const plainCandidate = searchData.find((item: any) => !!item.plainLyrics);
+            if (plainCandidate) {
+              const plainLines = plainCandidate.plainLyrics
+                .split('\n')
+                .map((l: string) => l.trim())
+                .filter(Boolean)
+                .map((text: string) => ({ text }));
+              if (plainLines.length > 0) {
+                return {
+                  success: true,
+                  type: 'plain',
+                  lines: plainLines,
+                  syncAvailable: false,
+                  hasTranslation: false,
+                  hasRomaji: false,
+                  source: 'lrcget',
+                  sourceName: 'LrcGet / LRCLIB',
+                };
+              }
+            }
           }
         }
       } catch (err: any) {

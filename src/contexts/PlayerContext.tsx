@@ -6,7 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from 'react';
-import type { Song, RepeatMode, LyricsResponse } from '../types/music.js';
+import type { Song, RepeatMode, LyricsResponse, SponsorBlockSegment } from '../types/music.js';
 import { api } from '../services/api.js';
 
 interface PlayerContextType {
@@ -24,6 +24,12 @@ interface PlayerContextType {
   error: string | null;
   lyrics: LyricsResponse | null;
   isLoadingLyrics: boolean;
+  sponsorBlockSegments: SponsorBlockSegment[];
+  isSponsorBlockEnabled: boolean;
+  toggleSponsorBlock: () => void;
+  sponsorBlockNotice: { show: boolean; category: string; from: number; to: number; uuid: string } | null;
+  dismissSponsorBlockNotice: () => void;
+  undoSponsorBlockSkip: () => void;
   playSong: (song: Song, newQueue?: Song[], index?: number) => void;
   togglePlay: () => void;
   seek: (time: number) => void;
@@ -79,6 +85,27 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<LyricsResponse | null>(null);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false);
+
+  // SponsorBlock state
+  const [sponsorBlockSegments, setSponsorBlockSegments] = useState<SponsorBlockSegment[]>([]);
+  const [isSponsorBlockEnabled, setIsSponsorBlockEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('aetheria_sponsorblock') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const [sponsorBlockNotice, setSponsorBlockNotice] = useState<{
+    show: boolean;
+    category: string;
+    from: number;
+    to: number;
+    uuid: string;
+  } | null>(null);
+
+  const sponsorSegmentsRef = useRef<SponsorBlockSegment[]>([]);
+  const ignoredSegmentsRef = useRef<Set<string>>(new Set());
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Shuffle order state
   const shuffleOrderRef = useRef<number[]>([]);
@@ -225,6 +252,23 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     },
     []
   );
+
+  // Fetch SponsorBlock segments for current track
+  const fetchSponsorBlock = useCallback(async (songId: string) => {
+    try {
+      const res = await api.getSponsorBlockSegments(songId);
+      if (res && res.success && Array.isArray(res.segments)) {
+        setSponsorBlockSegments(res.segments);
+        sponsorSegmentsRef.current = res.segments;
+      } else {
+        setSponsorBlockSegments([]);
+        sponsorSegmentsRef.current = [];
+      }
+    } catch {
+      setSponsorBlockSegments([]);
+      sponsorSegmentsRef.current = [];
+    }
+  }, []);
 
   // Update MediaSession (Section 24)
   useEffect(() => {
@@ -490,13 +534,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         shufflePointerRef.current = 0;
       }
 
-      // Automatically fetch lyrics in background
+      // Automatically fetch lyrics & sponsorblock in background
       const artistNames = Array.isArray(song.artists)
         ? song.artists.map((a) => a.name).join(', ')
         : typeof (song as any).artist === 'string'
         ? (song as any).artist
         : '';
       fetchLyrics(song.id, song.title, artistNames, song.duration);
+      ignoredSegmentsRef.current.clear();
+      setSponsorBlockNotice(null);
+      fetchSponsorBlock(song.id);
 
       try {
         // Step 1: Check stream endpoint
@@ -598,6 +645,70 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else if (audioRef.current) {
       audioRef.current.currentTime = time;
     }
+  }, []);
+
+  // SponsorBlock auto-skipping effect (Section: SponsorBlock API integration)
+  useEffect(() => {
+    if (!isSponsorBlockEnabled || sponsorBlockSegments.length === 0 || !isPlaying) return;
+
+    for (const seg of sponsorBlockSegments) {
+      const segId = seg.uuid || `${seg.start}-${seg.end}`;
+      if (ignoredSegmentsRef.current.has(segId)) continue;
+
+      // When playback reaches segment window
+      if (currentTime >= seg.start - 0.15 && currentTime < seg.end - 0.5) {
+        console.log(`[SPONSORBLOCK] Auto-skipping ${seg.category} from ${seg.start}s to ${seg.end}s`);
+        seek(seg.end);
+
+        const categoryLabels: Record<string, string> = {
+          music_offtopic: 'Non-music skit / intro',
+          sponsor: 'Sponsor segment',
+          intro: 'Intro / silence',
+          outro: 'Outro / credits',
+          filler: 'Filler segment',
+          preview: 'Preview snippet',
+        };
+        const label = categoryLabels[seg.category] || 'Non-music segment';
+
+        setSponsorBlockNotice({
+          show: true,
+          category: label,
+          from: seg.start,
+          to: seg.end,
+          uuid: segId,
+        });
+
+        if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+        noticeTimerRef.current = setTimeout(() => {
+          setSponsorBlockNotice(null);
+        }, 5500);
+        break;
+      }
+    }
+  }, [currentTime, isPlaying, isSponsorBlockEnabled, sponsorBlockSegments, seek]);
+
+  const toggleSponsorBlock = useCallback(() => {
+    setIsSponsorBlockEnabled((prev) => {
+      const nextVal = !prev;
+      try {
+        localStorage.setItem('aetheria_sponsorblock', String(nextVal));
+      } catch {
+        // ignore
+      }
+      return nextVal;
+    });
+  }, []);
+
+  const undoSponsorBlockSkip = useCallback(() => {
+    if (sponsorBlockNotice) {
+      ignoredSegmentsRef.current.add(sponsorBlockNotice.uuid);
+      seek(sponsorBlockNotice.from);
+      setSponsorBlockNotice(null);
+    }
+  }, [sponsorBlockNotice, seek]);
+
+  const dismissSponsorBlockNotice = useCallback(() => {
+    setSponsorBlockNotice(null);
   }, []);
 
   // Volume
@@ -821,6 +932,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         error,
         lyrics,
         isLoadingLyrics,
+        sponsorBlockSegments,
+        isSponsorBlockEnabled,
+        toggleSponsorBlock,
+        sponsorBlockNotice,
+        dismissSponsorBlockNotice,
+        undoSponsorBlockSkip,
         playSong,
         togglePlay,
         seek,

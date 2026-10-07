@@ -62,10 +62,22 @@ export interface LyricsResponse {
   syncAvailable?: boolean;
   hasTranslation?: boolean;
   hasRomaji?: boolean;
-  source?: 'netease' | 'lrclib' | 'innertube';
+  source?: 'netease' | 'lrclib' | 'innertube' | 'lrcget';
   sourceName?: string;
   code?: string;
   error?: string;
+}
+
+export interface SponsorBlockSegment {
+  category: 'music_offtopic' | 'sponsor' | 'intro' | 'outro' | 'preview' | 'filler';
+  start: number;
+  end: number;
+  uuid?: string;
+}
+
+export interface SponsorBlockResponse {
+  success: boolean;
+  segments: SponsorBlockSegment[];
 }
 
 export interface StreamResponse {

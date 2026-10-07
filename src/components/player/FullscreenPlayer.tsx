@@ -18,6 +18,9 @@ import {
   ExternalLink,
   Radio,
   Languages,
+  ShieldCheck,
+  FastForward,
+  X,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -86,6 +89,12 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
     isBuffering,
     lyrics,
     isLoadingLyrics,
+    sponsorBlockSegments,
+    isSponsorBlockEnabled,
+    toggleSponsorBlock,
+    sponsorBlockNotice,
+    dismissSponsorBlockNotice,
+    undoSponsorBlockSkip,
     togglePlay,
     seek,
     setVolume,
@@ -269,14 +278,37 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
           </button>
         </div>
 
-        <button
-          onClick={() => toggleFavorite(currentTrack)}
-          className={`p-2 rounded-full transition-colors ${
-            isFav ? 'text-rose-500' : 'text-white/60 hover:text-white'
-          }`}
-        >
-          <Heart className={`w-5 h-5 ${isFav ? 'fill-rose-500' : ''}`} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* SponsorBlock toggle */}
+          <button
+            onClick={toggleSponsorBlock}
+            className={`p-2 rounded-full transition-colors flex items-center justify-center ${
+              isSponsorBlockEnabled
+                ? sponsorBlockSegments.length > 0
+                  ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10'
+                  : 'text-cyan-400/80 hover:text-cyan-300'
+                : 'text-white/30 hover:text-white/60'
+            }`}
+            title={
+              isSponsorBlockEnabled
+                ? sponsorBlockSegments.length > 0
+                  ? `SponsorBlock Active (${sponsorBlockSegments.length} non-music segments detected)`
+                  : 'SponsorBlock Active (Auto-skip non-music segments)'
+                : 'SponsorBlock Disabled (Click to enable)'
+            }
+          >
+            <ShieldCheck className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={() => toggleFavorite(currentTrack)}
+            className={`p-2 rounded-full transition-colors ${
+              isFav ? 'text-rose-500' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            <Heart className={`w-5 h-5 ${isFav ? 'fill-rose-500' : ''}`} />
+          </button>
+        </div>
       </header>
 
       {/* Center content */}
@@ -326,8 +358,8 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                   {lyrics.sourceName ||
                     (lyrics.source === 'netease'
                       ? 'NetEase Cloud Music'
-                      : lyrics.source === 'lrclib'
-                      ? 'LRCLIB'
+                      : lyrics.source === 'lrcget' || lyrics.source === 'lrclib'
+                      ? 'LrcGet / LRCLIB'
                       : 'YouTube Music')}
                 </span>
 
@@ -495,7 +527,28 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
       </div>
 
       {/* Footer controls */}
-      <footer className="w-full max-w-2xl mx-auto px-6 py-6 pb-safe flex flex-col items-center gap-4 border-t border-white/[0.06]">
+      <footer className="w-full max-w-2xl mx-auto px-6 py-6 pb-safe flex flex-col items-center gap-4 border-t border-white/[0.06] relative">
+        {/* SponsorBlock Auto-Skip Notice Toast */}
+        {sponsorBlockNotice && (
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-200 text-xs shadow-xl backdrop-blur-md animate-in slide-in-from-bottom duration-200 mb-1">
+            <FastForward className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span>Skipped {sponsorBlockNotice.category}</span>
+            <button
+              onClick={undoSponsorBlockSkip}
+              className="ml-1 text-[11px] font-bold text-amber-300 hover:text-white underline cursor-pointer"
+            >
+              Undo
+            </button>
+            <button
+              onClick={dismissSponsorBlockNotice}
+              className="ml-1 p-0.5 rounded text-amber-300/60 hover:text-white cursor-pointer"
+              aria-label="Dismiss notice"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         {/* Scrubber */}
         <div className="w-full flex items-center gap-3">
           <span className="text-xs font-mono text-white/40 w-10 text-right">
@@ -505,7 +558,22 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             onClick={handleProgressBarClick}
             className="relative flex-1 h-3 cursor-pointer flex items-center group/fullscrub"
           >
-            <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden group-hover/fullscrub:h-2 transition-all">
+            <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden group-hover/fullscrub:h-2 transition-all relative">
+              {/* SponsorBlock Segment Markers */}
+              {isSponsorBlockEnabled &&
+                duration > 0 &&
+                sponsorBlockSegments.map((seg, idx) => (
+                  <div
+                    key={idx}
+                    title={`SponsorBlock: ${seg.category} (${formatTime(seg.start)} - ${formatTime(seg.end)})`}
+                    className="absolute top-0 bottom-0 bg-amber-400/80 z-10 pointer-events-none rounded-full"
+                    style={{
+                      left: `${(seg.start / duration) * 100}%`,
+                      width: `${Math.max(0.6, ((seg.end - seg.start) / duration) * 100)}%`,
+                    }}
+                  />
+                ))}
+
               <div
                 className="h-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-rose-400 rounded-full"
                 style={{ width: `${progressPercent}%` }}

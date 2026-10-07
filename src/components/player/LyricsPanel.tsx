@@ -153,8 +153,8 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
     lyrics?.sourceName ||
     (lyrics?.source === 'netease'
       ? 'NetEase'
-      : lyrics?.source === 'lrclib'
-      ? 'LRCLIB'
+      : lyrics?.source === 'lrcget' || lyrics?.source === 'lrclib'
+      ? 'LrcGet / LRCLIB'
       : lyrics?.source === 'innertube'
       ? 'YouTube Music'
       : '');

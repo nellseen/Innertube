@@ -122,6 +122,53 @@ router.get('/song/:videoId/lyrics', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/song/:videoId/sponsorblock (SponsorBlock API for skipping non-music segments, intros, skits, sponsors)
+router.get('/song/:videoId/sponsorblock', async (req: Request, res: Response) => {
+  const { videoId } = req.params;
+  if (!isValidVideoId(videoId)) {
+    return res.status(400).json({ success: false, segments: [] });
+  }
+
+  const cacheKey = `sponsorblock_${videoId}`;
+  const cached = appCache.get<any>(cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+
+  try {
+    const categories = encodeURIComponent(
+      JSON.stringify(['music_offtopic', 'sponsor', 'intro', 'outro', 'preview', 'filler'])
+    );
+    const url = `https://sponsor.ajay.app/api/skipSegments?videoID=${videoId}&categories=${categories}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Aetheria-Music/1.0' },
+      signal: AbortSignal.timeout(4500),
+    });
+
+    if (response.status === 200) {
+      const data: any = await response.json();
+      const segments = Array.isArray(data)
+        ? data.map((item: any) => ({
+            category: item.category || 'music_offtopic',
+            start: Math.max(0, item.segment?.[0] || 0),
+            end: Math.max(0, item.segment?.[1] || 0),
+            uuid: item.UUID,
+          }))
+        : [];
+      const result = { success: true, segments };
+      appCache.set(cacheKey, result, 6 * 60 * 60 * 1000); // 6 hours
+      return res.json(result);
+    }
+
+    // 404 indicates no skip segments exist for this video
+    const emptyResult = { success: true, segments: [] };
+    appCache.set(cacheKey, emptyResult, 6 * 60 * 60 * 1000);
+    return res.json(emptyResult);
+  } catch (err: any) {
+    return res.json({ success: true, segments: [] });
+  }
+});
+
 // GET /api/song/:videoId/related
 router.get('/song/:videoId/related', async (req: Request, res: Response) => {
   const { videoId } = req.params;
