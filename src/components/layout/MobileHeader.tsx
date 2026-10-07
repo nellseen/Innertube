@@ -1,17 +1,19 @@
 import React from 'react';
-import { Music2, Search, Sparkles } from 'lucide-react';
+import { Music2, Search, Sparkles, Palette } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 
 interface MobileHeaderProps {
   onSearchClick: () => void;
   currentPage: NavigationPage;
   onOpenAbout?: () => void;
+  onOpenTheme?: () => void;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onSearchClick,
   currentPage,
   onOpenAbout,
+  onOpenTheme,
 }) => {
   const getTitle = () => {
     switch (currentPage.name) {
@@ -21,6 +23,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         return 'Trending';
       case 'search':
         return 'Search';
+      case 'scene':
+        return 'Media Scene';
       case 'library':
         return 'Library';
       case 'artist':
@@ -57,6 +61,16 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
+        {onOpenTheme && (
+          <button
+            onClick={onOpenTheme}
+            className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center text-purple-400 hover:text-white transition-colors"
+            title="Ganti Tema"
+            aria-label="Ganti Tema"
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+        )}
         {onOpenAbout && (
           <button
             onClick={onOpenAbout}

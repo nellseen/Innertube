@@ -90,6 +90,7 @@ export type NavigationPage =
   | { name: 'home' }
   | { name: 'trending' }
   | { name: 'search'; initialQuery?: string }
+  | { name: 'scene' }
   | { name: 'library'; tab?: 'favorites' | 'history' | 'playlists' }
   | { name: 'artist'; id: string }
   | { name: 'album'; id: string }

@@ -116,28 +116,68 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* External Links & Footer */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+        <div className="space-y-2.5 pt-2">
+          {/* Instagram Link (Official user requested link) */}
           <a
-            href="https://github.com/nellseen"
+            href="https://www.instagram.com/tianshirrr_?stkn=MXF1NjVuOWswdm95Zg=="
             target="_blank"
-            rel="noreferrer"
-            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10 transition-colors"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500/10 via-purple-500/10 to-amber-500/10 hover:from-rose-500/20 hover:via-purple-500/20 hover:to-amber-500/20 border border-rose-500/20 hover:border-rose-400/40 text-white transition-all group"
           >
-            <Github className="w-4 h-4" />
-            <span>GitHub Profile</span>
-            <ExternalLink className="w-3 h-3 text-white/40" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1px] shrink-0">
+                <div className="w-full h-full bg-[#0D0F18] rounded-[7px] flex items-center justify-center">
+                  <svg
+                    className="w-3.5 h-3.5 text-rose-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-left">
+                <span className="text-xs font-semibold text-white group-hover:text-rose-300 transition-colors">
+                  Instagram Nell
+                </span>
+                <span className="text-[10px] text-white/50 font-mono ml-2">@tianshirrr_</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-rose-300">
+              <span>Buka Instagram</span>
+              <ExternalLink className="w-3 h-3" />
+            </div>
           </a>
 
-          <a
-            href="https://github.com/nellseen/Innertube"
-            target="_blank"
-            rel="noreferrer"
-            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white text-xs font-medium border border-white/[0.06] transition-colors"
-          >
-            <Code2 className="w-4 h-4 text-cyan-400" />
-            <span>Innertube Repo</span>
-            <ExternalLink className="w-3 h-3 text-white/40" />
-          </a>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <a
+              href="https://github.com/nellseen"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10 transition-colors"
+            >
+              <Github className="w-4 h-4" />
+              <span>GitHub Profile</span>
+              <ExternalLink className="w-3 h-3 text-white/40" />
+            </a>
+
+            <a
+              href="https://github.com/nellseen/Innertube"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white text-xs font-medium border border-white/[0.06] transition-colors"
+            >
+              <Code2 className="w-4 h-4 text-cyan-400" />
+              <span>Innertube Repo</span>
+              <ExternalLink className="w-3 h-3 text-white/40" />
+            </a>
+          </div>
         </div>
 
         {/* Credit footnote */}

@@ -14,6 +14,7 @@ import {
   Mic2,
   Maximize2,
   Sparkles,
+  Waves,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -25,6 +26,7 @@ interface BottomPlayerProps {
   isQueueOpen: boolean;
   isLyricsOpen: boolean;
   onNavigateToArtist?: (artistId: string) => void;
+  onNavigateToScene?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -41,6 +43,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
   isQueueOpen,
   isLyricsOpen,
   onNavigateToArtist,
+  onNavigateToScene,
 }) => {
   const {
     currentTrack,
@@ -254,6 +257,17 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
           <Sparkles className="w-3 h-3 text-cyan-400" />
           <span>High Quality</span>
         </div>
+
+        {/* Media Scene toggle */}
+        {onNavigateToScene && (
+          <button
+            onClick={onNavigateToScene}
+            className="p-2 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            title="Media Scene Visualizer"
+          >
+            <Waves className="w-4 h-4 text-purple-400" />
+          </button>
+        )}
 
         {/* Lyrics toggle */}
         <button

@@ -10,6 +10,8 @@ import {
   Music2,
   ListMusic,
   Sparkles,
+  Waves,
+  Palette,
 } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -19,6 +21,7 @@ interface SidebarProps {
   onNavigate: (page: NavigationPage) => void;
   onCreatePlaylist: () => void;
   onOpenAbout?: () => void;
+  onOpenTheme?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   onCreatePlaylist,
   onOpenAbout,
+  onOpenTheme,
 }) => {
   const { favorites, history, playlists } = useLibrary();
 
@@ -106,6 +110,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Search className={`w-4 h-4 ${isCurrent('search') ? 'text-cyan-400' : ''}`} />
             Search
           </button>
+
+          <button
+            onClick={() => onNavigate({ name: 'scene' })}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+              isCurrent('scene')
+                ? 'bg-white/10 text-white border border-white/15 shadow-sm'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+            }`}
+          >
+            <Waves className={`w-4 h-4 ${isCurrent('scene') ? 'text-purple-400' : ''}`} />
+            Media Scene
+          </button>
         </nav>
 
         {/* Library Section */}
@@ -182,8 +198,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* About Nell & Engine status indicator */}
+        {/* Theme, About Nell & Engine status indicator */}
         <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+          {onOpenTheme && (
+            <button
+              onClick={onOpenTheme}
+              className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] hover:border-purple-500/30 text-white/60 hover:text-white text-xs font-medium transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-3.5 h-3.5 text-purple-400 group-hover:rotate-12 transition-transform" />
+                <span>Ganti Tema</span>
+              </div>
+              <span className="text-[10px] text-white/40">Custom</span>
+            </button>
+          )}
+
           {onOpenAbout && (
             <button
               onClick={onOpenAbout}
@@ -209,3 +238,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+
