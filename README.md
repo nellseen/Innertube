@@ -1,6 +1,6 @@
 # Aetheria Music
 
-A premium full-stack dark iOS Glassmorphism music streaming and discovery web application powered by **youtubei.js / Innertube** as the core data engine.
+A premium full-stack dark iOS Glassmorphism music streaming, lyrics, and interactive chord discovery web application powered by **youtubei.js / Innertube** as the core data engine.
 
 ---
 
@@ -8,8 +8,22 @@ A premium full-stack dark iOS Glassmorphism music streaming and discovery web ap
 
 - **Apple Music + Spotify + YouTube Music Experience** with custom Dark iOS-style Glassmorphism UI.
 - **Innertube / youtubei.js Core Engine**: Pure InnerTube API integration without YouTube Data API keys or external quotas.
+- **Interactive Chord & Tab Sheet Engine (`Chord & Lirik`)**:
+  - **Dynamic Song Search**: Cari lagu apapun untuk melihat chord gitar/piano dan lirik yang selaras secara otomatis (bukan isi manual).
+  - **Auto-Sync dengan Lagu Aktif**: Chord otomatis mengikuti lagu yang sedang diputar di aplikasi (Play, Next, Previous) tanpa perlu pencarian ulang.
+  - **Auto-Trigger dari Seluruh Tampilan**:
+    - Tombol cepat **🎸 Chord** di setiap baris lagu (`SongRow`) pada halaman Discover, Search, Trending, Album, Playlist, dan Library.
+    - Tombol Chord di **Bottom Player**, **Fullscreen Player**, **Mobile Mini Player**, dan tab navigasi mobile **MobileNav**.
+  - **Auto-Scroll dengan Kecepatan yang Dapat Diatur**:
+    - Kontrol kecepatan scroll yang presisi (`-0.25x` hingga `+4.0x`).
+    - Pilihan preset kecepatan cepat: `0.5x` (Lambat), `0.75x`, `1.0x` (Normal), `1.5x`, `2.0x` (Cepat), dan `3.0x`.
+    - Animasi scroll berbasis `requestAnimationFrame` yang sangat halus (butter-smooth).
+    - Floating quick controller di pojok layar saat auto-scroll aktif untuk jeda/lanjut atau ubah kecepatan tanpa perlu menggulir ke atas.
+  - **Transpose Nada Real-Time**: Transpose semitone (`-11` hingga `+11`) menggunakan Tonal.js.
+  - **Diagram Fret & Teori Nada**: Popover dan modal interaktif dengan diagram fretboard gitar (posisi jari E A D G B e), susunan interval, dan audio synthesizer nada chord Web Audio.
+  - **Generator Harmoni AI & Fallback Cepat**: Menggunakan `@google/genai` (`gemini-3.8-flash`), katalog chord curated, dan engine progresi harmonik diatonis otomatis.
 - **Full Discovery (Discover Page)**:
-  - **Popular Artists Showcase**: Dedicated carousel featuring top global icons (Taylor Swift, The Weeknd, Billie Eilish, Bruno Mars, Ariana Grande, Drake, Ed Sheeran, Dua Lipa, Kendrick Lamar, Coldplay, Sabrina Carpenter, etc.) with verified channel metadata, monthly audience counts, and one-click quick playback.
+  - **Popular Artists Showcase**: Carousel artis global teratas dengan metadata terverifikasi, jumlah audiens bulanan, dan tombol putar instan.
   - Curated Home feed sections and dynamic release carousels.
   - Trending charts and global releases.
   - Search songs, artists, albums, and playlists with debounce and request cancellation (`AbortController`).
@@ -28,9 +42,13 @@ A premium full-stack dark iOS Glassmorphism music streaming and discovery web ap
   - Live scrubbable progress bar with hover time preview.
   - Queue management: reorder, add to queue, play next, remove, clear.
   - Race condition prevention with unique playback request IDs.
+- **SponsorBlock Auto-Skip Integration**:
+  - Deteksi dan skip otomatis segmen non-musik (intro panjang, sponsor, outro, sketsa) dengan tombol Undo toast notifikasi.
 - **Lyrics Engine**:
-  - Real lyrics extracted directly via YouTube Music Innertube API.
-  - Desktop lyrics side-drawer & fullscreen synced/plain lyrics views.
+  - Integrasi lirik multi-sumber (YouTube Music Innertube, NetEase, LRCLIB, LrcGet).
+  - Tampilan synced lyrics tersinkronisasi waktu dan lirik polos dengan terjemahan bahasa & transliterasi Romaji.
+- **Media Scene Visualizer**:
+  - Visualizer audio atmosferik dan pencahayaan dinamis bertema glassmorphism.
 - **Local Library**:
   - Favorites, recently played history, and custom playlist creation stored securely in local browser storage (`localStorage`).
 
@@ -43,7 +61,7 @@ Frontend (React 19 + TypeScript + Vite + Tailwind CSS)
   ↓
 Express API Server (TypeScript + tsx)
   ↓
-Innertube Singleton Service (youtubei.js v18)
+Innertube Singleton Service (youtubei.js v18) + Gemini 3.8 Flash AI
   ↓
 YouTube & YouTube Music Internal Endpoints
 ```
@@ -62,7 +80,8 @@ YouTube & YouTube Music Internal Endpoints
 | `GET` | `/api/song/:videoId` | Song detailed metadata |
 | `GET` | `/api/song/:videoId/stream` | Audio stream URL extraction |
 | `GET` | `/api/stream/:videoId/refresh`| Refreshes expired audio stream URLs |
-| `GET` | `/api/song/:videoId/lyrics` | Lyrics retrieval via Innertube |
+| `GET` | `/api/song/:videoId/lyrics` | Multi-source lyrics retrieval (Innertube / NetEase / LRCLIB) |
+| `GET` | `/api/song/:videoId/sponsorblock` | SponsorBlock non-music segments detection |
 | `GET` | `/api/song/:videoId/related`| Related recommendations and up-next songs |
 | `GET` | `/api/album/:albumId` | Album tracks and metadata |
 | `GET` | `/api/playlist/:playlistId` | Playlist tracks with continuation |
@@ -71,6 +90,7 @@ YouTube & YouTube Music Internal Endpoints
 | `GET` | `/api/search/artists?q=` | Filtered artists search |
 | `GET` | `/api/search/albums?q=` | Filtered albums search |
 | `GET` | `/api/search/playlists?q=` | Filtered playlists search |
+| `GET` | `/api/chord?q=&videoId=&title=` | Interactive chord & lyrics generation (Gemini AI + Curated + Algorithmic) |
 
 ---
 
