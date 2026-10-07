@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 
 interface SidebarProps {
   currentPage: NavigationPage;
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenTheme,
 }) => {
   const { favorites, history, playlists } = useLibrary();
+  const { themeConfig } = useTheme();
 
   const isCurrent = (name: string, tab?: string) => {
     if (currentPage.name !== name) return false;
@@ -203,13 +205,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {onOpenTheme && (
             <button
               onClick={onOpenTheme}
-              className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] hover:border-purple-500/30 text-white/60 hover:text-white text-xs font-medium transition-all group"
+              className="flex items-center justify-between px-3 py-2 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] hover:border-white/20 text-white/70 hover:text-white text-xs font-medium transition-all group"
             >
               <div className="flex items-center gap-2">
                 <Palette className="w-3.5 h-3.5 text-purple-400 group-hover:rotate-12 transition-transform" />
-                <span>Ganti Tema</span>
+                <span>Tema Tampilan</span>
               </div>
-              <span className="text-[10px] text-white/40">Custom</span>
+              <span className="flex items-center gap-1.5 text-[10px] text-white/50 group-hover:text-white/80 font-medium">
+                <span
+                  className="w-2 h-2 rounded-full shadow-sm"
+                  style={{ backgroundColor: themeConfig.accentPrimary }}
+                />
+                <span className="truncate max-w-[80px]">{themeConfig.name}</span>
+              </span>
             </button>
           )}
 

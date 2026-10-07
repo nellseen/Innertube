@@ -6,6 +6,7 @@ import type {
   PlaylistItem,
   SearchResults,
   HomeSection,
+  LyricsLine,
   LyricsResponse,
   StreamResponse,
 } from './types.js';
@@ -711,7 +712,7 @@ export class InnertubeService {
     }
   }
 
-  // --- LYRICS (Synced & Fallback Support) ---
+  // --- LYRICS (Synced, Translations & Fallback Support) ---
   async getLyrics(
     videoId: string,
     title?: string,
@@ -721,22 +722,188 @@ export class InnertubeService {
     const yt = await this.getClient();
     console.log(`[LYRICS] Fetching lyrics for videoId=${videoId}, title="${title || ''}", artist="${artist || ''}"`);
 
-    // Helper: Parse LRC format timestamps
+    // Helper: Parse LRC format timestamps (supports multi-timestamp lines & subsecond precision)
     const parseLRC = (lrcText: string): { text: string; startMs: number }[] => {
       const lines: { text: string; startMs: number }[] = [];
-      const regex = /\[(\d{2}):(\d{2}(?:\.\d{2,3})?)\](.*)/;
-      for (const raw of lrcText.split('\n')) {
-        const match = raw.match(regex);
-        if (match) {
+      if (!lrcText) return lines;
+      const rawLines = lrcText.split('\n');
+      const timeRegex = /\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\]/g;
+      for (const raw of rawLines) {
+        const matches = [...raw.matchAll(timeRegex)];
+        if (matches.length === 0) continue;
+        const text = raw.replace(timeRegex, '').trim();
+        if (!text) continue;
+        for (const match of matches) {
           const min = parseInt(match[1], 10);
           const sec = parseFloat(match[2]);
-          const text = match[3].trim();
-          if (text) {
-            lines.push({ text, startMs: Math.round((min * 60 + sec) * 1000) });
-          }
+          const startMs = Math.round((min * 60 + sec) * 1000);
+          lines.push({ text, startMs });
         }
       }
-      return lines;
+      return lines.sort((a, b) => a.startMs - b.startMs);
+    };
+
+    // Helper: Fetch from NetEase Cloud Music (supports original, translated, & romaji lyrics)
+    const fetchFromNetease = async (
+      trackName: string,
+      artistName?: string
+    ): Promise<LyricsResponse | null> => {
+      try {
+        const cleanTitle = trackName
+          .replace(/\s*[\(\[](?:official|music|video|audio|lyric|lyrics|hd|4k|remastered|mv)[^\)\]]*[\)\]]/gi, '')
+          .replace(/\s*ft\.?.*$/i, '')
+          .replace(/\s*feat\.?.*$/i, '')
+          .trim();
+        const cleanArtist = (artistName || '').replace(/,.*$/, '').trim();
+
+        // Perform search: first try "title artist", fallback to "title"
+        const queries = [`${cleanTitle} ${cleanArtist}`.trim()];
+        if (cleanArtist && cleanTitle.length > 2) {
+          queries.push(cleanTitle);
+        }
+
+        let candidateSongs: any[] = [];
+        for (const query of queries) {
+          const searchUrl = `https://music.163.com/api/cloudsearch/pc?s=${encodeURIComponent(query)}&type=1&offset=0&limit=4`;
+          const searchRes = await fetch(searchUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Referer': 'https://music.163.com/',
+              'Cookie': 'os=pc',
+            },
+            signal: AbortSignal.timeout(5000),
+          }).catch(() => null);
+
+          if (searchRes && searchRes.ok) {
+            const searchData: any = await searchRes.json().catch(() => null);
+            if (searchData?.result?.songs && Array.isArray(searchData.result.songs) && searchData.result.songs.length > 0) {
+              candidateSongs = searchData.result.songs;
+              break;
+            }
+          }
+        }
+
+        if (candidateSongs.length === 0) return null;
+
+        // Iterate through top candidates to find one that has lyrics
+        for (const candidate of candidateSongs.slice(0, 4)) {
+          const songId = candidate.id;
+          if (!songId) continue;
+
+          const lyricUrl = `https://music.163.com/api/song/lyric?id=${songId}&lv=1&kv=1&tv=1&rv=1`;
+          const lyricRes = await fetch(lyricUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Referer': 'https://music.163.com/',
+              'Cookie': 'os=pc',
+            },
+            signal: AbortSignal.timeout(5000),
+          }).catch(() => null);
+
+          if (!lyricRes || !lyricRes.ok) continue;
+          const lyricData: any = await lyricRes.json().catch(() => null);
+          if (!lyricData || !lyricData.lrc?.lyric) continue;
+
+          // Parse translation map (timestamp in ms -> translation text)
+          const transMap = new Map<number, string>();
+          const transParsed = lyricData.tlyric?.lyric ? parseLRC(lyricData.tlyric.lyric) : [];
+          for (const item of transParsed) {
+            transMap.set(item.startMs, item.text);
+          }
+
+          // Parse romaji map (timestamp in ms -> romaji text)
+          const romajiMap = new Map<number, string>();
+          const romajiParsed = lyricData.romalrc?.lyric ? parseLRC(lyricData.romalrc.lyric) : [];
+          for (const item of romajiParsed) {
+            romajiMap.set(item.startMs, item.text);
+          }
+
+          // Parse original lyrics
+          const originalParsed = parseLRC(lyricData.lrc.lyric);
+
+          if (originalParsed.length === 0) {
+            // Plain lyrics fallback from NetEase
+            const plainOriginalLines = lyricData.lrc.lyric
+              .split('\n')
+              .map((l: string) => l.replace(/\[.*?\]/g, '').trim())
+              .filter(Boolean);
+
+            const plainTransLines = lyricData.tlyric?.lyric
+              ? lyricData.tlyric.lyric
+                  .split('\n')
+                  .map((l: string) => l.replace(/\[.*?\]/g, '').trim())
+                  .filter(Boolean)
+              : [];
+
+            if (plainOriginalLines.length > 0) {
+              const lines: LyricsLine[] = plainOriginalLines.map((text: string, idx: number) => ({
+                text,
+                translation: plainTransLines[idx] || undefined,
+              }));
+
+              return {
+                success: true,
+                type: 'plain',
+                lines,
+                syncAvailable: false,
+                hasTranslation: lines.some((l) => !!l.translation),
+                hasRomaji: false,
+                source: 'netease',
+                sourceName: 'NetEase Cloud Music',
+              };
+            }
+            continue;
+          }
+
+          // Match translation and romaji per timestamp tolerance (within 500ms)
+          const matchedLines: LyricsLine[] = originalParsed.map((item) => {
+            let transText: string | undefined = transMap.get(item.startMs);
+            let romajiText: string | undefined = romajiMap.get(item.startMs);
+
+            if (!transText) {
+              for (const [tMs, tText] of transMap.entries()) {
+                if (Math.abs(tMs - item.startMs) <= 500) {
+                  transText = tText;
+                  break;
+                }
+              }
+            }
+
+            if (!romajiText) {
+              for (const [rMs, rText] of romajiMap.entries()) {
+                if (Math.abs(rMs - item.startMs) <= 500) {
+                  romajiText = rText;
+                  break;
+                }
+              }
+            }
+
+            return {
+              text: item.text,
+              translation: transText || undefined,
+              romaji: romajiText || undefined,
+              startMs: item.startMs,
+            };
+          });
+
+          const hasTranslation = matchedLines.some((l) => !!l.translation);
+          const hasRomaji = matchedLines.some((l) => !!l.romaji);
+
+          return {
+            success: true,
+            type: 'synced',
+            lines: matchedLines,
+            syncAvailable: true,
+            hasTranslation,
+            hasRomaji,
+            source: 'netease',
+            sourceName: 'NetEase Cloud Music',
+          };
+        }
+      } catch (err: any) {
+        console.log(`[NETEASE] Failed to fetch lyrics: ${err?.message}`);
+      }
+      return null;
     };
 
     // Helper: Fetch from open fallback lyrics repository (LRCLIB)
@@ -775,6 +942,10 @@ export class InnertubeService {
               type: 'synced',
               lines: parsed,
               syncAvailable: true,
+              hasTranslation: false,
+              hasRomaji: false,
+              source: 'lrclib',
+              sourceName: 'LRCLIB',
             };
           }
         }
@@ -791,6 +962,10 @@ export class InnertubeService {
               type: 'plain',
               lines: plainLines,
               syncAvailable: false,
+              hasTranslation: false,
+              hasRomaji: false,
+              source: 'lrclib',
+              sourceName: 'LRCLIB',
             };
           }
         }
@@ -800,16 +975,79 @@ export class InnertubeService {
       return null;
     };
 
-    // Priority 1: Check if external fallback provides rich SYNCED lyrics first if title is available
-    if (title) {
+    // Resolving clean metadata if missing
+    let songTitle = title;
+    let songArtist = artist;
+    let songDuration = duration;
+
+    if (!songTitle) {
       try {
-        const fallbackSynced = await fetchFromLrclib(title, artist, duration);
-        if (fallbackSynced?.syncAvailable && fallbackSynced.lines && fallbackSynced.lines.length > 0) {
-          console.log(`[LYRICS] Found synced lyrics with timestamps (${fallbackSynced.lines.length} lines)`);
-          return fallbackSynced;
+        const songData = await this.getSong(videoId).catch(() => null);
+        if (songData) {
+          songTitle = songData.title;
+          songArtist = songData.artists?.map((a: any) => a.name).join(', ');
+          songDuration = songData.duration;
         }
       } catch {
-        // continue to YouTube Music
+        // ignore
+      }
+    }
+
+    // Priority 1: Check NetEase (supports translations & romaji) and LRCLIB in parallel
+    if (songTitle) {
+      try {
+        const [neteaseRes, lrclibRes] = await Promise.allSettled([
+          fetchFromNetease(songTitle, songArtist),
+          fetchFromLrclib(songTitle, songArtist, songDuration),
+        ]);
+
+        const neteaseResult = neteaseRes.status === 'fulfilled' ? neteaseRes.value : null;
+        const lrclibResult = lrclibRes.status === 'fulfilled' ? lrclibRes.value : null;
+
+        // If NetEase has synced lyrics (with or without translations), prioritize NetEase!
+        if (neteaseResult?.syncAvailable && neteaseResult.lines && neteaseResult.lines.length > 0) {
+          console.log(`[LYRICS] Found NetEase lyrics (${neteaseResult.lines.length} lines, hasTranslation=${neteaseResult.hasTranslation}, hasRomaji=${neteaseResult.hasRomaji})`);
+          return neteaseResult;
+        }
+
+        // If LRCLIB has synced lyrics, use LRCLIB (and enrich with NetEase translations if available)
+        if (lrclibResult?.syncAvailable && lrclibResult.lines && lrclibResult.lines.length > 0) {
+          if (neteaseResult?.hasTranslation && neteaseResult.lines) {
+            // Enrich LRCLIB lines with NetEase translations
+            const transMap = new Map<number, string>();
+            neteaseResult.lines.forEach((l) => {
+              if (l.startMs !== undefined && l.translation) transMap.set(l.startMs, l.translation);
+            });
+            lrclibResult.lines = lrclibResult.lines.map((l) => {
+              if (l.startMs === undefined) return l;
+              let tr = transMap.get(l.startMs);
+              if (!tr) {
+                for (const [tMs, tText] of transMap.entries()) {
+                  if (Math.abs(tMs - l.startMs) <= 600) {
+                    tr = tText;
+                    break;
+                  }
+                }
+              }
+              return { ...l, translation: tr };
+            });
+            lrclibResult.hasTranslation = lrclibResult.lines.some((l) => !!l.translation);
+          }
+          console.log(`[LYRICS] Found LRCLIB synced lyrics (${lrclibResult.lines.length} lines, enrichedTranslation=${lrclibResult.hasTranslation})`);
+          return lrclibResult;
+        }
+
+        // If NetEase has plain lyrics with translations
+        if (neteaseResult && neteaseResult.lines && neteaseResult.lines.length > 0) {
+          return neteaseResult;
+        }
+
+        // If LRCLIB has plain lyrics
+        if (lrclibResult && lrclibResult.lines && lrclibResult.lines.length > 0) {
+          return lrclibResult;
+        }
+      } catch {
+        // continue to YouTube Music fallback
       }
     }
 
@@ -832,37 +1070,15 @@ export class InnertubeService {
             type: 'plain',
             lines,
             syncAvailable: false,
+            hasTranslation: false,
+            hasRomaji: false,
+            source: 'innertube',
+            sourceName: 'YouTube Music',
           };
         }
       }
     } catch (err: any) {
       console.log(`[LYRICS] Native YouTube Music lyrics unavailable for ${videoId}: ${err?.message}`);
-    }
-
-    // Priority 3: Fallback plain lyrics via LRCLIB if title was known or resolve song title
-    let songTitle = title;
-    let songArtist = artist;
-    let songDuration = duration;
-
-    if (!songTitle) {
-      try {
-        const songData = await this.getSong(videoId).catch(() => null);
-        if (songData) {
-          songTitle = songData.title;
-          songArtist = songData.artists?.map((a: any) => a.name).join(', ');
-          songDuration = songData.duration;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    if (songTitle) {
-      const fallbackResult = await fetchFromLrclib(songTitle, songArtist, songDuration);
-      if (fallbackResult && fallbackResult.lines && fallbackResult.lines.length > 0) {
-        console.log(`[LYRICS] Found fallback lyrics (${fallbackResult.lines.length} lines, synced=${fallbackResult.syncAvailable})`);
-        return fallbackResult;
-      }
     }
 
     return {

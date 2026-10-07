@@ -50,6 +50,8 @@ export interface HomeSection {
 
 export interface LyricsLine {
   text: string;
+  translation?: string;
+  romaji?: string;
   startMs?: number;
 }
 
@@ -58,6 +60,10 @@ export interface LyricsResponse {
   type?: 'plain' | 'synced';
   lines?: LyricsLine[];
   syncAvailable?: boolean;
+  hasTranslation?: boolean;
+  hasRomaji?: boolean;
+  source?: 'netease' | 'lrclib' | 'innertube';
+  sourceName?: string;
   code?: string;
   error?: string;
 }

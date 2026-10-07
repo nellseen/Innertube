@@ -131,10 +131,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTheme(keys[nextIdx]);
   };
 
-  // Sync to data-theme attribute on document root
+  // Sync to data-theme attribute and CSS custom properties on document root
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    const root = document.documentElement;
+    root.setAttribute('data-theme', currentTheme);
     document.body.style.backgroundColor = THEMES[currentTheme].bgBase;
+    root.style.setProperty('--bg-main', THEMES[currentTheme].bgBase);
+    root.style.setProperty('--bg-surface', THEMES[currentTheme].bgSurface);
+    root.style.setProperty('--border-subtle', THEMES[currentTheme].borderSubtle);
+    root.style.setProperty('--accent-primary', THEMES[currentTheme].accentPrimary);
+    root.style.setProperty('--accent-secondary', THEMES[currentTheme].accentSecondary);
   }, [currentTheme]);
 
   const themeConfig = THEMES[currentTheme];

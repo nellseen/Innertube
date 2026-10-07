@@ -198,12 +198,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => clearInterval(interval);
   }, []);
 
+  // In-memory lyrics cache for instant tab and track switching
+  const lyricsCacheRef = useRef<Map<string, any>>(new Map());
+
   // Fetch lyrics
   const fetchLyrics = useCallback(
     async (songId: string, title?: string, artist?: string, trackDuration?: number) => {
+      const cacheKey = `${songId}_${title || ''}`;
+      if (lyricsCacheRef.current.has(cacheKey)) {
+        setLyrics(lyricsCacheRef.current.get(cacheKey));
+        return;
+      }
+
       setIsLoadingLyrics(true);
       try {
         const data = await api.getLyrics(songId, title, artist, trackDuration);
+        if (data && data.success) {
+          lyricsCacheRef.current.set(cacheKey, data);
+        }
         setLyrics(data);
       } catch {
         setLyrics(null);

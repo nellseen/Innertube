@@ -2,8 +2,54 @@
 
 @layer utilities {
   .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+    padding-bottom: env(safe-area-inset-bottom, 0.75rem);
   }
+}
+
+/* Theme CSS Custom Properties */
+:root, [data-theme="cyber"] {
+  --bg-main: #090A0F;
+  --bg-surface: rgba(13, 15, 24, 0.75);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --accent-primary: #06b6d4;
+  --accent-secondary: #6366f1;
+  --accent-glow: rgba(6, 182, 212, 0.15);
+}
+
+[data-theme="obsidian"] {
+  --bg-main: #000000;
+  --bg-surface: rgba(10, 10, 12, 0.9);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --accent-primary: #a855f7;
+  --accent-secondary: #3b82f6;
+  --accent-glow: rgba(168, 85, 247, 0.15);
+}
+
+[data-theme="emerald"] {
+  --bg-main: #040E0A;
+  --bg-surface: rgba(6, 20, 15, 0.85);
+  --border-subtle: rgba(16, 185, 129, 0.14);
+  --accent-primary: #10b981;
+  --accent-secondary: #14b8a6;
+  --accent-glow: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="sunset"] {
+  --bg-main: #0D0614;
+  --bg-surface: rgba(22, 10, 32, 0.85);
+  --border-subtle: rgba(244, 63, 94, 0.14);
+  --accent-primary: #f43f5e;
+  --accent-secondary: #f97316;
+  --accent-glow: rgba(244, 63, 94, 0.15);
+}
+
+[data-theme="titanium"] {
+  --bg-main: #0B1120;
+  --bg-surface: rgba(15, 23, 42, 0.85);
+  --border-subtle: rgba(56, 189, 248, 0.14);
+  --accent-primary: #38bdf8;
+  --accent-secondary: #818cf8;
+  --accent-glow: rgba(56, 189, 248, 0.15);
 }
 
 /* Custom minimal scrollbar */
@@ -31,7 +77,10 @@ html, body {
   color: #FFFFFF;
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.4s ease;
 }

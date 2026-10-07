@@ -1,19 +1,60 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Mic2, RefreshCw, ExternalLink, Radio, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { X, Mic2, RefreshCw, ExternalLink, Radio, Languages } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
+import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
 
 interface LyricsPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// O(log N) binary search for instant timestamp resolution
+function getActiveLineIndex(
+  lines: Array<{ startMs?: number }>,
+  currentMs: number,
+  durationSec: number
+): number {
+  if (!lines || lines.length === 0) return -1;
+
+  const hasTimestamps = lines[0]?.startMs !== undefined || lines[1]?.startMs !== undefined;
+
+  if (hasTimestamps) {
+    let low = 0;
+    let high = lines.length - 1;
+    let result = -1;
+
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const start = lines[mid].startMs;
+      if (start !== undefined && start <= currentMs) {
+        result = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return result >= 0 ? result : 0;
+  }
+
+  // Fallback for plain lyrics without timestamps based on song progress
+  if (durationSec > 0 && currentMs > 0) {
+    const progress = Math.min(1, Math.max(0, currentMs / (durationSec * 1000)));
+    return Math.min(lines.length - 1, Math.floor(progress * lines.length));
+  }
+
+  return 0;
+}
+
 export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => {
   const { currentTrack, lyrics, isLoadingLyrics, currentTime, duration, seek, fetchLyrics } =
     usePlayer();
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<any>(null);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [showRomaji, setShowRomaji] = useState(true);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeLineRef = useRef<HTMLDivElement>(null);
+  const lastScrolledIndexRef = useRef<number>(-1);
+  const isAutoScrollingRef = useRef<boolean>(false);
 
   // Active artist string helper
   const artistName = useMemo(() => {
@@ -25,91 +66,115 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
       : 'Unknown Artist';
   }, [currentTrack]);
 
-  // Determine active lyrics line index
+  // Determine active line using binary search
   const activeLineIndex = useMemo(() => {
     if (!lyrics?.lines || lyrics.lines.length === 0) return -1;
-    const currentMs = currentTime * 1000;
+    return getActiveLineIndex(lyrics.lines, currentTime * 1000, duration);
+  }, [lyrics?.lines, currentTime, duration]);
 
-    const hasTimestamps = lyrics.lines.some((l) => typeof l.startMs === 'number');
-
-    if (hasTimestamps) {
-      let index = -1;
-      for (let i = 0; i < lyrics.lines.length; i++) {
-        const line = lyrics.lines[i];
-        if (line.startMs !== undefined && line.startMs <= currentMs) {
-          index = i;
-        } else if (line.startMs !== undefined && line.startMs > currentMs) {
-          break;
-        }
-      }
-      return index >= 0 ? index : 0;
-    }
-
-    // Progression estimation for plain lyrics based on duration
-    if (duration > 0 && currentTime > 0) {
-      const progress = Math.min(1, Math.max(0, currentTime / duration));
-      return Math.min(lyrics.lines.length - 1, Math.floor(progress * lyrics.lines.length));
-    }
-
-    return 0;
-  }, [currentTime, duration, lyrics]);
-
-  // Smooth auto-scroll to active line
+  // High-performance smooth scroll container directly (No full DOM tree reflows)
   useEffect(() => {
-    if (
-      isOpen &&
-      activeLineIndex >= 0 &&
-      activeLineRef.current &&
-      !isUserScrolling &&
-      containerRef.current
-    ) {
-      activeLineRef.current.scrollIntoView({
+    if (!isOpen || activeLineIndex < 0 || isUserScrolling || !containerRef.current) return;
+
+    // Only scroll if the active line actually changed
+    if (activeLineIndex === lastScrolledIndexRef.current) return;
+    lastScrolledIndexRef.current = activeLineIndex;
+
+    const container = containerRef.current;
+    const activeEl = container.querySelector(`[data-index="${activeLineIndex}"]`) as HTMLElement;
+
+    if (activeEl) {
+      isAutoScrollingRef.current = true;
+      const targetTop =
+        activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
+
+      container.scrollTo({
+        top: Math.max(0, targetTop),
         behavior: 'smooth',
-        block: 'center',
       });
+
+      // Release auto-scrolling flag after animation completes
+      setTimeout(() => {
+        isAutoScrollingRef.current = false;
+      }, 350);
     }
   }, [activeLineIndex, isUserScrolling, isOpen]);
 
-  // Detect manual user scrolling
-  const handleScroll = () => {
+  // Detect manual user scrolling from mouse wheel or touch
+  const handleUserInteraction = useCallback(() => {
+    if (isAutoScrollingRef.current) return;
     setIsUserScrolling(true);
+
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       setIsUserScrolling(false);
-    }, 4000);
-  };
+    }, 3500);
+  }, []);
 
-  const handleResumeSync = () => {
+  const handleResumeSync = useCallback(() => {
     setIsUserScrolling(false);
-    if (activeLineRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+    lastScrolledIndexRef.current = -1; // Force immediate re-center
+    if (containerRef.current && activeLineIndex >= 0) {
+      const activeEl = containerRef.current.querySelector(
+        `[data-index="${activeLineIndex}"]`
+      ) as HTMLElement;
+      if (activeEl) {
+        const targetTop =
+          activeEl.offsetTop - containerRef.current.clientHeight / 2 + activeEl.clientHeight / 2;
+        containerRef.current.scrollTo({
+          top: Math.max(0, targetTop),
+          behavior: 'smooth',
+        });
+      }
     }
-  };
+  }, [activeLineIndex]);
 
-  const handleRetryLyrics = () => {
+  const handleSeek = useCallback(
+    (startMs: number) => {
+      seek(startMs / 1000);
+      setIsUserScrolling(false);
+      lastScrolledIndexRef.current = -1;
+    },
+    [seek]
+  );
+
+  const handleRetryLyrics = useCallback(() => {
     if (currentTrack) {
       fetchLyrics(currentTrack.id, currentTrack.title, artistName, currentTrack.duration);
     }
-  };
+  }, [currentTrack, fetchLyrics, artistName]);
 
   if (!isOpen) return null;
 
   const isSynced = lyrics?.syncAvailable || lyrics?.type === 'synced';
+  const hasTranslation = lyrics?.hasTranslation || lyrics?.lines?.some((l) => !!l.translation);
+  const hasRomaji = lyrics?.hasRomaji || lyrics?.lines?.some((l) => !!l.romaji);
+  const sourceLabel =
+    lyrics?.sourceName ||
+    (lyrics?.source === 'netease'
+      ? 'NetEase'
+      : lyrics?.source === 'lrclib'
+      ? 'LRCLIB'
+      : lyrics?.source === 'innertube'
+      ? 'YouTube Music'
+      : '');
 
   return (
     <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0B0D15]/95 backdrop-blur-3xl border-l border-white/[0.08] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 select-none">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] shrink-0">
         <div className="flex items-center gap-2">
           <Mic2 className="w-4 h-4 text-cyan-400" />
           <h3 className="text-base font-bold text-white tracking-tight">Lyrics</h3>
           {isSynced && (
-            <span className="text-[10px] text-cyan-400 font-medium tracking-wide flex items-center gap-1 ml-1">
+            <span className="text-[10px] text-cyan-400 font-medium tracking-wide flex items-center gap-1 ml-1 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
               Synced
+            </span>
+          )}
+          {sourceLabel && (
+            <span className="text-[10px] text-white/40 font-mono tracking-tight bg-white/[0.05] border border-white/[0.08] px-2 py-0.5 rounded-full">
+              {sourceLabel}
             </span>
           )}
         </div>
@@ -122,30 +187,70 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
         </button>
       </div>
 
-      {/* Track Header Details */}
+      {/* Track Header Details & Controls */}
       {currentTrack && (
-        <div className="px-6 pt-4 pb-2 border-b border-white/[0.04] flex items-center justify-between">
-          <div className="min-w-0 flex-1 pr-3">
+        <div className="px-5 py-3 border-b border-white/[0.04] flex items-center justify-between shrink-0 gap-2 bg-white/[0.01]">
+          <div className="min-w-0 flex-1">
             <h4 className="text-sm font-bold text-white truncate">{currentTrack.title}</h4>
             <p className="text-xs text-white/40 truncate mt-0.5">{artistName}</p>
           </div>
-          {isUserScrolling && lyrics?.lines && lyrics.lines.length > 0 && (
-            <button
-              onClick={handleResumeSync}
-              className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full transition-all shrink-0 flex items-center gap-1"
-            >
-              <Radio className="w-3 h-3 animate-pulse" />
-              Sync
-            </button>
-          )}
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Translation toggle button */}
+            {hasTranslation && (
+              <button
+                onClick={() => setShowTranslation((prev) => !prev)}
+                className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                  showTranslation
+                    ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/40 shadow-sm'
+                    : 'bg-white/[0.03] text-white/40 border-white/[0.08] hover:text-white/70'
+                }`}
+                title="Tampilkan / sembunyikan terjemahan"
+              >
+                <Languages className="w-3 h-3" />
+                <span>Terjemahan</span>
+              </button>
+            )}
+
+            {/* Romaji toggle button */}
+            {hasRomaji && (
+              <button
+                onClick={() => setShowRomaji((prev) => !prev)}
+                className={`text-[11px] font-medium px-2 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                  showRomaji
+                    ? 'bg-cyan-600/30 text-cyan-300 border-cyan-500/40 shadow-sm'
+                    : 'bg-white/[0.03] text-white/40 border-white/[0.08] hover:text-white/70'
+                }`}
+                title="Tampilkan / sembunyikan romaji"
+              >
+                <span>Romaji</span>
+              </button>
+            )}
+
+            {/* Sync button */}
+            {isUserScrolling && lyrics?.lines && lyrics.lines.length > 0 && (
+              <button
+                onClick={handleResumeSync}
+                className="text-[11px] font-medium text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-950/60 border border-cyan-500/30 px-2 py-1 rounded-lg transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+              >
+                <Radio className="w-3 h-3 animate-pulse" />
+                Sync
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Lyrics body */}
+      {/* Optimized Lyrics Scroll Container */}
       <div
         ref={containerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 text-center custom-scrollbar relative"
+        onWheel={handleUserInteraction}
+        onTouchMove={handleUserInteraction}
+        className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-3 text-center custom-scrollbar relative"
+        style={{
+          contain: 'layout style',
+          overscrollBehavior: 'contain',
+        }}
       >
         {isLoadingLyrics ? (
           <div className="my-auto flex flex-col items-center gap-3 text-white/40">
@@ -153,33 +258,23 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
             <p className="text-xs font-mono">Synchronizing lyrics...</p>
           </div>
         ) : lyrics?.lines && lyrics.lines.length > 0 ? (
-          <div className="flex flex-col gap-5 py-8">
-            {lyrics.lines.map((line, idx) => {
-              const isActive = idx === activeLineIndex;
-              const hasTimestamp = typeof line.startMs === 'number';
-
-              return (
-                <div
-                  key={idx}
-                  ref={isActive ? activeLineRef : null}
-                  onClick={() => {
-                    if (hasTimestamp && line.startMs !== undefined) {
-                      seek(line.startMs / 1000);
-                      setIsUserScrolling(false);
-                    }
-                  }}
-                  className={`transition-all duration-300 px-3 py-1.5 rounded-xl ${
-                    hasTimestamp ? 'cursor-pointer' : 'cursor-default'
-                  } ${
-                    isActive
-                      ? 'text-white font-bold text-lg sm:text-xl scale-105 bg-white/[0.04] shadow-sm'
-                      : 'text-white/40 hover:text-white/70 text-sm sm:text-base font-medium'
-                  }`}
-                >
-                  <p className="leading-relaxed tracking-normal">{line.text}</p>
-                </div>
-              );
-            })}
+          <div className="flex flex-col gap-2.5 py-8 w-full">
+            {lyrics.lines.map((line, idx) => (
+              <OptimizedLyricsLine
+                key={idx}
+                index={idx}
+                text={line.text}
+                translation={line.translation}
+                romaji={line.romaji}
+                showTranslation={showTranslation}
+                showRomaji={showRomaji}
+                hasTimestamp={typeof line.startMs === 'number'}
+                startMs={line.startMs}
+                isActive={idx === activeLineIndex}
+                isLarge={false}
+                onSeek={handleSeek}
+              />
+            ))}
           </div>
         ) : (
           /* Graceful Fallback State */
@@ -193,7 +288,6 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
               Official lyrics could not be synchronized for this track. You can retry retrieval or search online.
             </p>
 
-            {/* Fallback track info card */}
             {currentTrack && (
               <div className="w-full max-w-xs p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] mb-6 text-left">
                 <div className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-2">
