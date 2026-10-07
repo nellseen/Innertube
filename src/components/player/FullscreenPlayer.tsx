@@ -21,10 +21,12 @@ import {
   ShieldCheck,
   FastForward,
   X,
+  Guitar,
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
 import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
+import { ChordLyricsViewer } from '../chords/ChordLyricsViewer.js';
 
 interface FullscreenPlayerProps {
   isOpen: boolean;
@@ -112,6 +114,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   const [activeTab, setActiveTab] = useState<'artwork' | 'lyrics' | 'queue'>('artwork');
   const [showTranslation, setShowTranslation] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
+  const [showChordModal, setShowChordModal] = useState(false);
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -402,6 +405,16 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                   </button>
                 )}
 
+                {/* Chord Sheet toggle */}
+                <button
+                  onClick={() => setShowChordModal(true)}
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-full border bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                  title="Buka Chord Sheet & Teori Nada"
+                >
+                  <Guitar className="w-3 h-3" />
+                  <span>Chord</span>
+                </button>
+
                 {/* Sync control button when user scrolled away */}
                 {isUserScrolling && (
                   <button
@@ -668,6 +681,19 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
           </div>
         </div>
       </footer>
+
+      {/* Modal Chord Sheet */}
+      {showChordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl h-[88vh] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-[#080A11]">
+            <ChordLyricsViewer
+              songTitle={currentTrack?.title}
+              artistName={artistName}
+              onClose={() => setShowChordModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

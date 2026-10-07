@@ -109,6 +109,7 @@ export type NavigationPage =
   | { name: 'trending' }
   | { name: 'search'; initialQuery?: string }
   | { name: 'scene' }
+  | { name: 'chords' }
   | { name: 'library'; tab?: 'favorites' | 'history' | 'playlists' }
   | { name: 'artist'; id: string }
   | { name: 'album'; id: string }

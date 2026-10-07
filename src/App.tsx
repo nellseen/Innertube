@@ -27,6 +27,7 @@ import { AlbumPage } from './pages/AlbumPage.js';
 import { PlaylistPage } from './pages/PlaylistPage.js';
 import { LibraryPage } from './pages/LibraryPage.js';
 import { MediaScenePage } from './pages/MediaScenePage.js';
+import { ChordPage } from './pages/ChordPage.js';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<NavigationPage>({ name: 'home' });
@@ -56,6 +57,8 @@ function AppContent() {
         return <SearchPage initialQuery={currentPage.initialQuery} onNavigate={navigateTo} />;
       case 'scene':
         return <MediaScenePage onNavigate={navigateTo} />;
+      case 'chords':
+        return <ChordPage onNavigate={navigateTo} />;
       case 'artist':
         return <ArtistPage artistId={currentPage.id} onNavigate={navigateTo} />;
       case 'album':

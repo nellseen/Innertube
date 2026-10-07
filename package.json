@@ -10,7 +10,8 @@
     "start": "tsx server.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "postinstall": "find node_modules/@tonaljs node_modules/tonal -name 'index.cjs' -exec bash -c 'for f; do d=$(dirname \"$f\"); cp -n \"$f\" \"$d/index.js\" 2>/dev/null; done' _ {} + || true"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -24,6 +25,7 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "tonal": "^6.5.0",
     "vite": "^8.3.0",
     "youtubei.js": "^18.1.0"
   },

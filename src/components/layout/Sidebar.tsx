@@ -12,6 +12,7 @@ import {
   Sparkles,
   Waves,
   Palette,
+  Guitar,
 } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -123,6 +124,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Waves className={`w-4 h-4 ${isCurrent('scene') ? 'text-purple-400' : ''}`} />
             Media Scene
+          </button>
+
+          <button
+            onClick={() => onNavigate({ name: 'chords' })}
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+              isCurrent('chords')
+                ? 'bg-white/10 text-white border border-white/15 shadow-sm'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+            }`}
+          >
+            <Guitar className={`w-4 h-4 ${isCurrent('chords') ? 'text-amber-400' : ''}`} />
+            Chord & Lirik
           </button>
         </nav>
 

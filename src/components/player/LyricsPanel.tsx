@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { X, Mic2, RefreshCw, ExternalLink, Radio, Languages } from 'lucide-react';
+import { X, Mic2, RefreshCw, ExternalLink, Radio, Languages, Guitar } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
+import { ChordLyricsViewer } from '../chords/ChordLyricsViewer.js';
 
 interface LyricsPanelProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showTranslation, setShowTranslation] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
+  const [showChordSheet, setShowChordSheet] = useState(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastScrolledIndexRef = useRef<number>(-1);
@@ -227,6 +229,16 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
               </button>
             )}
 
+            {/* Chord Sheet toggle button */}
+            <button
+              onClick={() => setShowChordSheet(true)}
+              className="text-[11px] font-medium px-2 py-1 rounded-lg border bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30 transition-all flex items-center gap-1 cursor-pointer"
+              title="Buka Lembar Chord & Teori Nada"
+            >
+              <Guitar className="w-3 h-3" />
+              <span>Chord</span>
+            </button>
+
             {/* Sync button */}
             {isUserScrolling && lyrics?.lines && lyrics.lines.length > 0 && (
               <button
@@ -333,6 +345,19 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
           </div>
         )}
       </div>
+
+      {/* Modal Chord Sheet */}
+      {showChordSheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl h-[88vh] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-[#080A11]">
+            <ChordLyricsViewer
+              songTitle={currentTrack?.title}
+              artistName={artistName}
+              onClose={() => setShowChordSheet(false)}
+            />
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
