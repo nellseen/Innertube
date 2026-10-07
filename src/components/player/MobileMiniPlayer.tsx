@@ -1,12 +1,17 @@
 import React from 'react';
-import { Play, Pause, SkipForward } from 'lucide-react';
+import { Play, Pause, SkipForward, Guitar } from 'lucide-react';
+import type { Song } from '../../types/music.js';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 
 interface MobileMiniPlayerProps {
   onOpenFullscreen: () => void;
+  onNavigateToChords?: (song?: Song) => void;
 }
 
-export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({ onOpenFullscreen }) => {
+export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({
+  onOpenFullscreen,
+  onNavigateToChords,
+}) => {
   const { currentTrack, isPlaying, isBuffering, currentTime, duration, togglePlay, next } =
     usePlayer();
 
@@ -62,6 +67,16 @@ export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({ onOpenFullsc
             <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
           )}
         </button>
+
+        {onNavigateToChords && (
+          <button
+            onClick={() => onNavigateToChords(currentTrack)}
+            className="p-1.5 rounded-full text-amber-400 hover:text-amber-300 active:scale-95 transition-all"
+            title="Chord & Lirik Lagu Ini"
+          >
+            <Guitar className="w-4 h-4" />
+          </button>
+        )}
 
         <button
           onClick={next}

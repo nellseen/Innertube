@@ -423,13 +423,19 @@ Respond ONLY in JSON format:
   "content": "Full formatted chord sheet text with brackets"
 }`;
 
-        const geminiRes = await aiClient.models.generateContent({
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Gemini timeout')), 4000)
+        );
+
+        const geminiCall = aiClient.models.generateContent({
           model: 'gemini-3.8-flash',
           contents: prompt,
           config: {
             responseMimeType: 'application/json',
           },
         });
+
+        const geminiRes = await Promise.race([geminiCall, timeoutPromise]);
 
         const text = geminiRes.text?.trim() || '';
         if (text) {

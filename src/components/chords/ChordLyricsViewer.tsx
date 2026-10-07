@@ -19,7 +19,6 @@ import {
   Radio,
   Sliders,
   ChevronDown,
-  ChevronUp,
   Volume2,
 } from 'lucide-react';
 import type { Song, NavigationPage } from '../../types/music.js';
@@ -40,20 +39,10 @@ interface ParsedLine {
   tokens: ChordToken[];
 }
 
-interface ChordSongPreset {
-  id: string;
-  title: string;
-  artist: string;
-  originalKey: string;
-  content: string;
-  thumbnail?: string;
-}
-
 const POPULAR_RECOMMENDATIONS = [
   'Komang - Raim Laode',
   'Akad - Payung Teduh',
   'Laskar Pelangi - Nidji',
-  'Aku Yang Pernah Meyakini',
   'Hati-Hati di Jalan - Tulus',
   'Perfect - Ed Sheeran',
   'Yellow - Coldplay',
@@ -112,8 +101,8 @@ interface ChordLyricsViewerProps {
 
 export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   initialContent,
-  songTitle = 'Aku Yang Pernah Meyakini',
-  artistName = 'Contoh Lagu',
+  songTitle,
+  artistName,
   initialSong,
   initialQuery,
   onClose,
@@ -122,41 +111,40 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 }) => {
   const { currentTrack, isPlaying, playSong, togglePlay } = usePlayer();
 
+  // Determine starting song target
+  const effectiveInitialSong = initialSong || (currentTrack ? {
+    id: currentTrack.id,
+    title: currentTrack.title,
+    artists: currentTrack.artists,
+    thumbnail: currentTrack.thumbnail,
+    duration: currentTrack.duration,
+  } as Song : null);
+
   // Active Song Metadata
   const [currentSongTitle, setCurrentSongTitle] = useState<string>(
-    initialSong?.title || songTitle
+    effectiveInitialSong?.title || (songTitle && songTitle !== 'Aku Yang Pernah Meyakini' ? songTitle : '') || 'Cari Lagu'
   );
   const [currentArtistName, setCurrentArtistName] = useState<string>(
-    initialSong?.artists?.map((a) => a.name).join(', ') || artistName
+    effectiveInitialSong?.artists?.map((a: any) => a.name).join(', ') || artistName || ''
   );
   const [currentVideoId, setCurrentVideoId] = useState<string | undefined>(
-    initialSong?.id
+    effectiveInitialSong?.id
   );
   const [currentThumbnail, setCurrentThumbnail] = useState<string | undefined>(
-    initialSong?.thumbnail
+    effectiveInitialSong?.thumbnail
   );
   const [originalKey, setOriginalKey] = useState<string>('C');
 
-  // Text content & editor
+  // Text content & editor: Start empty when loading a specific song to avoid showing another song's chords!
   const [textInput, setTextInput] = useState<string>(
-    initialContent ||
-      `[Intro] [C] [G] [Am] [F]
-
-[Verse 1]
-[C]Aku yang [Am]pernah meyakini [F]dirimu[G]
-[C]Setulus hati [Am]mencoba tuk me[F]mahami[G]
-[Em]Namun bila [Am]akhirnya harus [F]begini[G]
-[C]Kulepaskan se[Am]gala yang pernah [F]terjadi[G]
-
-[Chorus]
-[F]Biar waktu yang kan men[G]jawab semua
-[Em]Kisah yang pernah ter[Am]ukir di antara kita
-[Dm]Takkan kusesali per[G]temuan yang indah ini
-[C]Semoga kau bahagia selalu`
+    initialContent || ''
   );
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [transpose, setTranspose] = useState<number>(0);
   const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+
+  // Auto-sync with player track: when user clicks or changes songs, chords automatically match!
+  const [autoSyncWithPlayer, setAutoSyncWithPlayer] = useState<boolean>(true);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery || '');
@@ -172,7 +160,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
   // Auto-scroll state with configurable speed
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(false);
-  // Speed multiplier: 0.5 to 4.0 (1.0 default = ~25px/sec)
+  // Speed multiplier: 0.5 to 4.0 (1.0 default = ~28px/sec)
   const [scrollSpeed, setScrollSpeed] = useState<number>(1.0);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -180,7 +168,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
-  // Speed presets
   const SPEED_PRESETS = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
 
   // Auto scroll loop using requestAnimationFrame for butter-smooth scrolling
@@ -196,8 +183,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
     const step = (time: number) => {
       if (lastTimeRef.current !== null && scrollContainerRef.current) {
-        const delta = (time - lastTimeRef.current) / 1000; // in seconds
-        // Base speed: 28 pixels per second at 1.0x
+        const delta = (time - lastTimeRef.current) / 1000;
         const pixelsToScroll = 28 * scrollSpeed * delta;
         accumulatedScrollRef.current += pixelsToScroll;
 
@@ -207,7 +193,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
           accumulatedScrollRef.current -= toAdd;
         }
 
-        // Check if reached bottom
         const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
         if (scrollTop + clientHeight >= scrollHeight - 2) {
           setIsAutoScrolling(false);
@@ -236,23 +221,33 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     query: string,
     songData?: { id?: string; title?: string; artist?: string; thumbnail?: string }
   ) => {
+    const targetTitle = songData?.title || query;
+    const targetArtist = songData?.artist || '';
+
     setIsSearching(true);
     setSearchError(null);
     setShowSearchResults(false);
     setIsAutoScrolling(false);
 
+    // CRITICAL: Immediately update title, artist, and clear previous chord text so they NEVER mismatch
+    if (targetTitle) setCurrentSongTitle(targetTitle);
+    if (targetArtist) setCurrentArtistName(targetArtist);
+    if (songData?.id) setCurrentVideoId(songData.id);
+    if (songData?.thumbnail) setCurrentThumbnail(songData.thumbnail);
+    setTextInput('');
+
     try {
       const res = await api.getChord({
         q: query,
         videoId: songData?.id,
-        title: songData?.title,
-        artist: songData?.artist,
+        title: targetTitle,
+        artist: targetArtist,
       });
 
       if (res && res.success && res.content) {
         setTextInput(res.content);
-        setCurrentSongTitle(res.song?.title || songData?.title || query);
-        setCurrentArtistName(res.song?.artist || songData?.artist || '');
+        setCurrentSongTitle(res.song?.title || targetTitle);
+        setCurrentArtistName(res.song?.artist || targetArtist);
         setCurrentVideoId(res.song?.id || songData?.id);
         setCurrentThumbnail(res.song?.thumbnail || songData?.thumbnail);
         setOriginalKey(res.originalKey || 'C');
@@ -260,7 +255,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
         setIsEditing(false);
         setPopoverChord(null);
 
-        // Scroll back to top
         if (scrollContainerRef.current) {
           scrollContainerRef.current.scrollTop = 0;
         }
@@ -275,26 +269,52 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     }
   };
 
-  // Trigger initial query or song if provided
+  // 1. Initial Load Effect: Automatically triggers for initialSong, initialQuery, songTitle, or currentTrack
   useEffect(() => {
     if (initialSong) {
       loadChordForSong(initialSong.title, {
         id: initialSong.id,
         title: initialSong.title,
-        artist: initialSong.artists?.map((a) => a.name).join(', '),
+        artist: initialSong.artists?.map((a: any) => a.name).join(', '),
         thumbnail: initialSong.thumbnail,
       });
     } else if (initialQuery) {
       loadChordForSong(initialQuery);
+    } else if (songTitle && songTitle !== 'Aku Yang Pernah Meyakini') {
+      loadChordForSong(songTitle, {
+        title: songTitle,
+        artist: artistName,
+      });
+    } else if (currentTrack) {
+      loadChordForSong(currentTrack.title, {
+        id: currentTrack.id,
+        title: currentTrack.title,
+        artist: currentTrack.artists?.map((a: any) => a.name).join(', '),
+        thumbnail: currentTrack.thumbnail,
+      });
+    } else {
+      // Default initial showcase
+      loadChordForSong('Aku Yang Pernah Meyakini');
     }
-  }, [initialSong?.id, initialQuery]);
+  }, [initialSong?.id, initialSong?.title, initialQuery, songTitle]);
+
+  // 2. Auto-sync Effect: When user clicks/plays any song anywhere in the app, chord automatically updates!
+  useEffect(() => {
+    if (autoSyncWithPlayer && currentTrack?.id && currentTrack.id !== currentVideoId) {
+      loadChordForSong(currentTrack.title, {
+        id: currentTrack.id,
+        title: currentTrack.title,
+        artist: currentTrack.artists?.map((a: any) => a.name).join(', '),
+        thumbnail: currentTrack.thumbnail,
+      });
+    }
+  }, [currentTrack?.id, autoSyncWithPlayer]);
 
   // Handle Search Input Submission
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    // Search songs first to show results dropdown if multiple, or load directly
     setIsSearching(true);
     setSearchError(null);
     try {
@@ -303,7 +323,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
       if (foundSongs.length > 0) {
         setSearchResults(foundSongs.slice(0, 5));
         setShowSearchResults(true);
-        // Automatically select the best match
         const topSong = foundSongs[0];
         await loadChordForSong(searchQuery.trim(), {
           id: topSong.id,
@@ -321,30 +340,29 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     }
   };
 
-  // Handle selecting a search result
   const handleSelectSongResult = (song: Song) => {
     setShowSearchResults(false);
     loadChordForSong(song.title, {
       id: song.id,
       title: song.title,
-      artist: song.artists?.map((a) => a.name).join(', '),
+      artist: song.artists?.map((a: { name: string }) => a.name).join(', '),
       thumbnail: song.thumbnail,
     });
   };
 
-  // Handle "Gunakan Lagu Sedang Diputar"
   const handleUseCurrentTrack = () => {
     if (!currentTrack) return;
     loadChordForSong(currentTrack.title, {
       id: currentTrack.id,
       title: currentTrack.title,
-      artist: currentTrack.artists?.map((a) => a.name).join(', '),
+      artist: currentTrack.artists?.map((a: { name: string }) => a.name).join(', '),
       thumbnail: currentTrack.thumbnail,
     });
   };
 
   // Parser: converts raw lines into parsed tokens with chords above lyrics
   const parsedLines = useMemo<ParsedLine[]>(() => {
+    if (!textInput) return [];
     const rawLines = textInput.split('\n');
     const result: ParsedLine[] = [];
 
@@ -398,7 +416,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     return result;
   }, [textInput]);
 
-  // List of all unique chords used in this song
+  // Unique chords in this song
   const uniqueChords = useMemo<string[]>(() => {
     const set = new Set<string>();
     for (const line of parsedLines) {
@@ -431,7 +449,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
       if (currentTrack?.id === currentVideoId) {
         togglePlay();
       } else {
-        const dummySong: Song = {
+        const songToPlay: Song = {
           id: currentVideoId,
           title: currentSongTitle,
           artists: [{ name: currentArtistName }],
@@ -440,7 +458,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
             'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
           duration: 200,
         };
-        playSong(dummySong);
+        playSong(songToPlay);
       }
     }
   };
@@ -511,7 +529,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
             )}
           </form>
 
-          {/* Search Results Dropdown (if triggered) */}
+          {/* Search Results Dropdown */}
           {showSearchResults && searchResults.length > 0 && (
             <div className="max-w-4xl mx-auto w-full mt-2 p-2 rounded-2xl bg-[#121522]/95 backdrop-blur-xl border border-white/10 shadow-2xl z-30 flex flex-col gap-1">
               <span className="text-[10px] uppercase tracking-wider text-white/40 px-3 py-1 font-semibold">
@@ -583,7 +601,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
               {currentVideoId && (
                 <button
                   onClick={handlePlayCurrentChordSong}
-                  className="absolute inset-0 bg-black/40 hover:bg-black/60 flex items-center justify-center text-cyan-300 transition-colors"
+                  className="absolute inset-0 bg-black/40 hover:bg-black/60 flex items-center justify-center text-cyan-300 transition-colors cursor-pointer"
                   title="Dengarkan lagu ini"
                 >
                   {isPlaying && currentTrack?.id === currentVideoId ? (
@@ -597,8 +615,8 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white truncate max-w-[260px] sm:max-w-md">
-                  {currentSongTitle}
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white truncate max-w-[240px] sm:max-w-md">
+                  {currentSongTitle || 'Cari Lagu'}
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
                   Key: {originalKey}
@@ -612,6 +630,23 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
           {/* Action Controls Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Auto-Sync with Player Toggle */}
+            {currentTrack && (
+              <button
+                type="button"
+                onClick={() => setAutoSyncWithPlayer((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                  autoSyncWithPlayer
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm'
+                    : 'bg-white/[0.04] text-white/40 border-white/[0.08] hover:text-white'
+                }`}
+                title="Ketika aktif, chord otomatis mengikuti lagu yang sedang Anda putar"
+              >
+                <Radio className={`w-3 h-3 ${autoSyncWithPlayer ? 'animate-pulse text-cyan-400' : ''}`} />
+                <span className="hidden sm:inline">Auto-Sync</span>
+              </button>
+            )}
+
             {/* 1. Transpose Controls */}
             <div className="flex items-center gap-1 bg-white/[0.04] px-2 py-1 rounded-xl border border-white/[0.08]">
               <span className="text-[11px] text-white/40 font-mono mr-0.5">Nada:</span>
@@ -652,9 +687,8 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
               )}
             </div>
 
-            {/* 2. AUTO-SCROLL & SPEED SETTINGS (User Requested Upgrade) */}
+            {/* 2. AUTO-SCROLL & SPEED SETTINGS */}
             <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] relative">
-              {/* Play/Pause Auto-Scroll */}
               <button
                 onClick={() => setIsAutoScrolling((prev) => !prev)}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
@@ -668,38 +702,33 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
                 <span>Auto-Scroll</span>
               </button>
 
-              {/* Speed Controller Badge & Adjuster */}
               <div className="flex items-center border-l border-white/10 pl-1.5 ml-0.5 gap-1">
-                {/* Decrement Speed */}
                 <button
                   onClick={() => setScrollSpeed((s) => Math.max(0.25, parseFloat((s - 0.25).toFixed(2))))}
-                  className="p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  className="p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                   title="Perlambat scroll speed (-0.25x)"
                 >
                   <Minus className="w-3 h-3" />
                 </button>
 
-                {/* Speed Multiplier Pill (Opens Presets Menu) */}
                 <button
                   onClick={() => setShowSpeedMenu((prev) => !prev)}
-                  className="px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-mono font-bold text-[11px] transition-colors flex items-center gap-0.5"
+                  className="px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-mono font-bold text-[11px] transition-colors flex items-center gap-0.5 cursor-pointer"
                   title="Klik untuk memilih kecepatan preset scroll"
                 >
                   <span>{scrollSpeed.toFixed(1)}x</span>
                   <ChevronDown className="w-2.5 h-2.5" />
                 </button>
 
-                {/* Increment Speed */}
                 <button
                   onClick={() => setScrollSpeed((s) => Math.min(4.0, parseFloat((s + 0.25).toFixed(2))))}
-                  className="p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                  className="p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                   title="Percepat scroll speed (+0.25x)"
                 >
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
 
-              {/* Speed Presets Dropdown */}
               {showSpeedMenu && (
                 <div className="absolute top-full mt-1.5 right-0 w-36 rounded-2xl bg-[#141724]/95 backdrop-blur-2xl border border-white/10 shadow-2xl p-1.5 z-40 flex flex-col gap-1">
                   <span className="text-[10px] uppercase font-semibold text-white/40 px-2 py-0.5">
@@ -776,7 +805,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
       </div>
 
       {/* 2. UNIQUE CHORDS QUICK BAR */}
-      {uniqueChords.length > 0 && !isEditing && (
+      {uniqueChords.length > 0 && !isEditing && !isSearching && (
         <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 border-b border-white/[0.04] bg-white/[0.01] overflow-x-auto custom-scrollbar shrink-0">
           <span className="text-[11px] text-white/40 font-semibold tracking-wider uppercase shrink-0 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -813,19 +842,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
         }}
         className="flex-1 overflow-y-auto px-6 py-8 custom-scrollbar relative"
       >
-        {/* Loading overlay when searching */}
-        {isSearching && (
-          <div className="absolute inset-0 bg-[#080A11]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 animate-pulse">
-              <Guitar className="w-6 h-6 animate-bounce" />
-            </div>
-            <p className="text-sm font-medium text-white/80">
-              Menganalisis chord & lirik lagu...
-            </p>
-            <p className="text-xs text-white/40">Menyelaraskan struktur nada dan kunci lagu</p>
-          </div>
-        )}
-
         {/* Search Error Notice */}
         {searchError && (
           <div className="max-w-2xl mx-auto mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs flex items-center justify-between gap-3">
@@ -839,7 +855,30 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
           </div>
         )}
 
-        {isEditing ? (
+        {/* LOADING STATE: Guaranteed zero mismatch between title and content */}
+        {isSearching || !textInput ? (
+          <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20 text-center gap-4 animate-in fade-in duration-300">
+            <div className="w-16 h-16 rounded-3xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-xl shadow-cyan-500/10">
+              <Guitar className="w-8 h-8 animate-bounce" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                Memuat Chord: {currentSongTitle || 'Lagu Pilihan'}
+              </h3>
+              <p className="text-xs text-white/50 mt-1">
+                {currentArtistName
+                  ? `${currentArtistName} • Menyelaraskan harmoni & lirik lagu...`
+                  : 'Menganalisis harmoni & progresi nada...'}
+              </p>
+            </div>
+            <div className="w-56 h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
+              <div className="h-full bg-gradient-to-r from-cyan-400 to-indigo-400 rounded-full animate-pulse w-3/4" />
+            </div>
+            <span className="text-[11px] text-white/30 font-mono">
+              Memproses struktur kunci nada dan fretboard...
+            </span>
+          </div>
+        ) : isEditing ? (
           /* Editor Mode */
           <div className="max-w-2xl mx-auto flex flex-col gap-4">
             <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-200 flex items-start gap-2.5">
@@ -888,7 +927,6 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
                 );
               }
 
-              // Check if line contains any chords
               const hasChords = line.tokens.some((tok) => tok.chord);
 
               return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { NavigationPage } from './types/music.js';
-import { PlayerProvider } from './contexts/PlayerContext.js';
+import { PlayerProvider, usePlayer } from './contexts/PlayerContext.js';
 import { LibraryProvider } from './contexts/LibraryContext.js';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext.js';
 import { SceneProvider, useScene } from './contexts/SceneContext.js';
@@ -41,6 +41,7 @@ function AppContent() {
 
   const { themeConfig } = useTheme();
   const { isBackgroundActive, activeSceneType, backgroundDim } = useScene();
+  const { currentTrack } = usePlayer();
 
   const navigateTo = (page: NavigationPage) => {
     setCurrentPage(page);
@@ -151,11 +152,18 @@ function AppContent() {
         isLyricsOpen={isLyricsOpen}
         onNavigateToArtist={(id) => navigateTo({ name: 'artist', id })}
         onNavigateToScene={() => navigateTo({ name: 'scene' })}
-        onNavigateToChords={() => navigateTo({ name: 'chords' })}
+        onNavigateToChords={(song) =>
+          navigateTo({ name: 'chords', song: song || currentTrack || undefined })
+        }
       />
 
       {/* Mobile Floating Mini Player */}
-      <MobileMiniPlayer onOpenFullscreen={() => setIsFullscreenOpen(true)} />
+      <MobileMiniPlayer
+        onOpenFullscreen={() => setIsFullscreenOpen(true)}
+        onNavigateToChords={(song) =>
+          navigateTo({ name: 'chords', song: song || currentTrack || undefined })
+        }
+      />
 
       {/* Mobile Bottom Tab Bar */}
       <MobileNav currentPage={currentPage} onNavigate={navigateTo} />

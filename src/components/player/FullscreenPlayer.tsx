@@ -687,6 +687,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-4xl h-[88vh] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-[#080A11]">
             <ChordLyricsViewer
+              initialSong={currentTrack || undefined}
               songTitle={currentTrack?.title}
               artistName={artistName}
               onClose={() => setShowChordModal(false)}

@@ -143,6 +143,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                   playlist={favorites}
                   onNavigateToArtist={(id) => onNavigate({ name: 'artist', id })}
                   onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
+                  onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
                 />
               ))}
             </div>
@@ -189,6 +190,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                   playlist={history}
                   onNavigateToArtist={(id) => onNavigate({ name: 'artist', id })}
                   onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
+                  onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
                 />
               ))}
             </div>
@@ -258,6 +260,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                         playlist={selectedPlaylist.tracks}
                         onNavigateToArtist={(id) => onNavigate({ name: 'artist', id })}
                         onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
+                        onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
                       />
                       <button
                         onClick={() => removeFromPlaylist(selectedPlaylist.id, song.id)}

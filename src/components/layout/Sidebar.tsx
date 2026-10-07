@@ -17,6 +17,7 @@ import {
 import type { NavigationPage } from '../../types/music.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
 import { useTheme } from '../../contexts/ThemeContext.js';
+import { usePlayer } from '../../contexts/PlayerContext.js';
 
 interface SidebarProps {
   currentPage: NavigationPage;
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { favorites, history, playlists } = useLibrary();
   const { themeConfig } = useTheme();
+  const { currentTrack } = usePlayer();
 
   const isCurrent = (name: string, tab?: string) => {
     if (currentPage.name !== name) return false;
@@ -127,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           <button
-            onClick={() => onNavigate({ name: 'chords' })}
+            onClick={() => onNavigate({ name: 'chords', song: currentTrack || undefined })}
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
               isCurrent('chords')
                 ? 'bg-white/10 text-white border border-white/15 shadow-sm'

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Pause, Heart, MoreVertical, ListPlus, Radio } from 'lucide-react';
+import { Play, Pause, Heart, MoreVertical, ListPlus, Radio, Guitar } from 'lucide-react';
 import type { Song } from '../../types/music.js';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
@@ -11,6 +11,7 @@ interface SongRowProps {
   showAlbum?: boolean;
   onNavigateToArtist?: (artistId: string) => void;
   onNavigateToAlbum?: (albumId: string) => void;
+  onNavigateToChord?: (song: Song) => void;
 }
 
 export const SongRow: React.FC<SongRowProps> = ({
@@ -20,6 +21,7 @@ export const SongRow: React.FC<SongRowProps> = ({
   showAlbum = true,
   onNavigateToArtist,
   onNavigateToAlbum,
+  onNavigateToChord,
 }) => {
   const { currentTrack, isPlaying, playSong, togglePlay, addToQueue, playNext } = usePlayer();
   const { isFavorite, toggleFavorite } = useLibrary();
@@ -178,6 +180,20 @@ export const SongRow: React.FC<SongRowProps> = ({
           <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500' : ''}`} />
         </button>
 
+        {/* Quick Chord button */}
+        {onNavigateToChord && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigateToChord(song);
+            }}
+            className="p-1.5 rounded-full text-white/20 hover:text-amber-400 transition-colors opacity-0 group-hover:opacity-100"
+            title="Lihat Chord Lagu Ini"
+          >
+            <Guitar className="w-4 h-4" />
+          </button>
+        )}
+
         {/* More Menu */}
         <div className="relative">
           <button
@@ -215,6 +231,18 @@ export const SongRow: React.FC<SongRowProps> = ({
                 <ListPlus className="w-3.5 h-3.5 text-cyan-400" />
                 Add to Queue
               </button>
+              {onNavigateToChord && (
+                <button
+                  onClick={() => {
+                    onNavigateToChord(song);
+                    setShowMenu(false);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-amber-300 hover:bg-white/10 transition-colors text-left"
+                >
+                  <Guitar className="w-3.5 h-3.5 text-amber-400" />
+                  Lihat Chord & Tab
+                </button>
+              )}
               <button
                 onClick={() => {
                   toggleFavorite(song);

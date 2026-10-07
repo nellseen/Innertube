@@ -1,6 +1,7 @@
 import React from 'react';
-import { Compass, Flame, Search, Library, Waves } from 'lucide-react';
+import { Compass, Flame, Search, Library, Guitar } from 'lucide-react';
 import type { NavigationPage } from '../../types/music.js';
+import { usePlayer } from '../../contexts/PlayerContext.js';
 
 interface MobileNavProps {
   currentPage: NavigationPage;
@@ -8,11 +9,12 @@ interface MobileNavProps {
 }
 
 export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate }) => {
+  const { currentTrack } = usePlayer();
   const tabs = [
     { name: 'home', label: 'Discover', icon: Compass },
     { name: 'trending', label: 'Trending', icon: Flame },
     { name: 'search', label: 'Search', icon: Search },
-    { name: 'scene', label: 'Scene', icon: Waves },
+    { name: 'chords', label: 'Chords', icon: Guitar },
     { name: 'library', label: 'Library', icon: Library },
   ];
 
@@ -24,7 +26,13 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
         return (
           <button
             key={tab.name}
-            onClick={() => onNavigate({ name: tab.name as any })}
+            onClick={() => {
+              if (tab.name === 'chords') {
+                onNavigate({ name: 'chords', song: currentTrack || undefined });
+              } else {
+                onNavigate({ name: tab.name as any });
+              }
+            }}
             className={`flex flex-col items-center gap-1 py-1 px-2 transition-all ${
               isActive ? 'text-cyan-400 scale-105' : 'text-white/40 hover:text-white/70'
             }`}

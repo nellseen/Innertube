@@ -192,6 +192,7 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({ artistId, onNavigate }) 
                 index={i}
                 playlist={songs}
                 onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
+                onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
               />
             ))}
           </div>

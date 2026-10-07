@@ -202,6 +202,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
                     playlist={results.songs}
                     onNavigateToArtist={(id) => onNavigate({ name: 'artist', id })}
                     onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
+                    onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
                   />
                 ))}
               </div>
