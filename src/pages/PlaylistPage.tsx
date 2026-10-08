@@ -124,15 +124,15 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlistId, onNaviga
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-            {playlist.title}
+            {typeof playlist.title === 'string' ? playlist.title : ''}
           </h1>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm text-white/60 mt-2">
-            {playlist.author && <span className="font-semibold text-white/90">{playlist.author}</span>}
+            {playlist.author && typeof playlist.author === 'string' && <span className="font-semibold text-white/90">{playlist.author}</span>}
             <span>• {tracks.length} tracks</span>
           </div>
 
-          {playlist.description && (
+          {playlist.description && typeof playlist.description === 'string' && (
             <p className="text-xs text-white/40 line-clamp-2 mt-2 max-w-xl">
               {playlist.description}
             </p>

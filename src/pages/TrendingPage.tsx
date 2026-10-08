@@ -86,7 +86,7 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ onNavigate }) => {
           return (
             <section key={idx} className="mb-10">
               <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-4">
-                {sec.title}
+                {typeof sec.title === 'string' ? sec.title : 'Trending'}
               </h2>
 
               {hasSongsOnly ? (

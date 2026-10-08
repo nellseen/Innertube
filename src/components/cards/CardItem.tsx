@@ -15,18 +15,19 @@ export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay 
     ('name' in item && !('title' in item)) ||
     ('subscribers' in item && typeof item.subscribers === 'string');
 
-  const title = 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown';
+  const rawTitle = 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown';
+  const title = typeof rawTitle === 'string' ? rawTitle : typeof (rawTitle as any)?.text === 'string' ? (rawTitle as any).text : '';
   let subtitle = '';
 
   if (isArtist) {
     subtitle = 'Artist';
   } else if ('artists' in item && Array.isArray(item.artists)) {
-    subtitle = item.artists.map((a) => a.name).join(', ');
+    subtitle = item.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ');
   } else if ('artist' in item && typeof (item as any).artist === 'string') {
     subtitle = (item as any).artist;
-  } else if ('author' in item && item.author) {
+  } else if ('author' in item && typeof item.author === 'string') {
     subtitle = item.author;
-  } else if ('year' in item && item.year) {
+  } else if ('year' in item && typeof item.year === 'string') {
     subtitle = `Album • ${item.year}`;
   }
 

@@ -103,7 +103,7 @@ export const SongRow: React.FC<SongRowProps> = ({
               isCurrent ? 'text-cyan-400' : 'text-white/90 group-hover:text-white'
             }`}
           >
-            {song.title}
+            {typeof song.title === 'string' ? song.title : ''}
           </p>
           {song.isExplicit && (
             <span className="px-1.5 py-0.5 text-[9px] font-bold bg-white/10 text-white/60 rounded uppercase shrink-0">
@@ -131,7 +131,7 @@ export const SongRow: React.FC<SongRowProps> = ({
                   a.id ? 'hover:underline cursor-pointer' : ''
                 }`}
               >
-                {a.name}
+                {typeof a?.name === 'string' ? a.name : ''}
               </span>
               {i < arr.length - 1 && ', '}
             </React.Fragment>
@@ -153,7 +153,7 @@ export const SongRow: React.FC<SongRowProps> = ({
               song.album?.id ? 'hover:underline cursor-pointer' : ''
             }`}
           >
-            {song.album.name}
+            {typeof song.album.name === 'string' ? song.album.name : ''}
           </span>
         </div>
       )}

@@ -221,12 +221,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
                   {/* Name */}
                   <h3 className="w-full text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white truncate transition-colors">
-                    {artist.name}
+                    {typeof artist.name === 'string' ? artist.name : ''}
                   </h3>
 
                   {/* Unboxed audience metadata */}
                   <p className="w-full text-[10px] sm:text-[11px] text-white/40 truncate mt-0.5">
-                    {artist.subscribers ? artist.subscribers.replace(/^Artist\s*•?\s*/i, '') : 'Artist'}
+                    {typeof artist.subscribers === 'string' ? artist.subscribers.replace(/^Artist\s*•?\s*/i, '') : 'Artist'}
                   </p>
                 </div>
               );
@@ -238,7 +238,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* Sections */}
       {!isLoading &&
         sections
-          .filter((sec) => !sec.title?.toLowerCase().includes('popular artist'))
+          .filter((sec) => typeof sec.title === 'string' && !sec.title.toLowerCase().includes('popular artist'))
           .map((sec, idx) => {
             if (!sec.items || sec.items.length === 0) return null;
 
@@ -248,7 +248,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <section key={idx} className="mb-10">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
-                    {sec.title}
+                    {typeof sec.title === 'string' ? sec.title : 'Featured'}
                   </h2>
                 </div>
 

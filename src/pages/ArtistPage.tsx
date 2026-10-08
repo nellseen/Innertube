@@ -138,17 +138,17 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({ artistId, onNavigate }) 
           </div>
 
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight truncate">
-            {artist.name}
+            {typeof artist.name === 'string' ? artist.name : ''}
           </h1>
 
-          {artist.subscribers && (
+          {artist.subscribers && typeof artist.subscribers === 'string' && (
             <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-white/50 mt-1.5 font-medium">
               <Users className="w-3.5 h-3.5" />
               <span>{artist.subscribers}</span>
             </div>
           )}
 
-          {artist.description && (
+          {artist.description && typeof artist.description === 'string' && (
             <p className="text-xs text-white/40 line-clamp-2 mt-2 max-w-2xl">
               {artist.description}
             </p>

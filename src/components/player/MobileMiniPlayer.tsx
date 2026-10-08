@@ -43,10 +43,12 @@ export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({
 
       {/* Title & Artist */}
       <div className="flex-1 min-w-0 pr-1">
-        <h4 className="text-xs font-semibold text-white truncate">{currentTrack.title}</h4>
+        <h4 className="text-xs font-semibold text-white truncate">
+          {typeof currentTrack.title === 'string' ? currentTrack.title : ''}
+        </h4>
         <p className="text-[11px] text-white/40 truncate">
           {Array.isArray(currentTrack.artists)
-            ? currentTrack.artists.map((a) => a.name).join(', ')
+            ? currentTrack.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ')
             : typeof (currentTrack as any).artist === 'string'
             ? (currentTrack as any).artist
             : 'Unknown Artist'}

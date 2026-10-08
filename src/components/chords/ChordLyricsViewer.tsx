@@ -122,10 +122,18 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
   // Active Song Metadata
   const [currentSongTitle, setCurrentSongTitle] = useState<string>(
-    effectiveInitialSong?.title || (songTitle && songTitle !== 'Aku Yang Pernah Meyakini' ? songTitle : '') || 'Cari Lagu'
+    typeof effectiveInitialSong?.title === 'string'
+      ? effectiveInitialSong.title
+      : typeof songTitle === 'string' && songTitle !== 'Aku Yang Pernah Meyakini'
+      ? songTitle
+      : 'Cari Lagu'
   );
   const [currentArtistName, setCurrentArtistName] = useState<string>(
-    effectiveInitialSong?.artists?.map((a: any) => a.name).join(', ') || artistName || ''
+    Array.isArray(effectiveInitialSong?.artists)
+      ? effectiveInitialSong.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ')
+      : typeof artistName === 'string'
+      ? artistName
+      : ''
   );
   const [currentVideoId, setCurrentVideoId] = useState<string | undefined>(
     effectiveInitialSong?.id
@@ -221,8 +229,8 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     query: string,
     songData?: { id?: string; title?: string; artist?: string; thumbnail?: string }
   ) => {
-    const targetTitle = songData?.title || query;
-    const targetArtist = songData?.artist || '';
+    const targetTitle = typeof songData?.title === 'string' ? songData.title : typeof query === 'string' ? query : '';
+    const targetArtist = typeof songData?.artist === 'string' ? songData.artist : '';
 
     setIsSearching(true);
     setSearchError(null);
@@ -245,12 +253,14 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
       });
 
       if (res && res.success && res.content) {
-        setTextInput(res.content);
-        setCurrentSongTitle(res.song?.title || targetTitle);
-        setCurrentArtistName(res.song?.artist || targetArtist);
+        setTextInput(typeof res.content === 'string' ? res.content : '');
+        const resTitle = typeof res.song?.title === 'string' ? res.song.title : targetTitle;
+        const resArtist = typeof res.song?.artist === 'string' ? res.song.artist : targetArtist;
+        setCurrentSongTitle(resTitle);
+        setCurrentArtistName(resArtist);
         setCurrentVideoId(res.song?.id || songData?.id);
         setCurrentThumbnail(res.song?.thumbnail || songData?.thumbnail);
-        setOriginalKey(res.originalKey || 'C');
+        setOriginalKey(typeof res.originalKey === 'string' ? res.originalKey : 'C');
         setTranspose(0);
         setIsEditing(false);
         setPopoverChord(null);
@@ -616,14 +626,14 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold tracking-tight text-white truncate max-w-[240px] sm:max-w-md">
-                  {currentSongTitle || 'Cari Lagu'}
+                  {typeof currentSongTitle === 'string' && currentSongTitle ? currentSongTitle : 'Cari Lagu'}
                 </h2>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
-                  Key: {originalKey}
+                  Key: {typeof originalKey === 'string' ? originalKey : 'C'}
                 </span>
               </div>
               <p className="text-xs text-white/40 truncate">
-                {currentArtistName || 'Artis Musik'}
+                {typeof currentArtistName === 'string' && currentArtistName ? currentArtistName : 'Artis Musik'}
               </p>
             </div>
           </div>
@@ -863,10 +873,10 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">
-                Memuat Chord: {currentSongTitle || 'Lagu Pilihan'}
+                Memuat Chord: {typeof currentSongTitle === 'string' && currentSongTitle ? currentSongTitle : 'Lagu Pilihan'}
               </h3>
               <p className="text-xs text-white/50 mt-1">
-                {currentArtistName
+                {typeof currentArtistName === 'string' && currentArtistName
                   ? `${currentArtistName} • Menyelaraskan harmoni & lirik lagu...`
                   : 'Menganalisis harmoni & progresi nada...'}
               </p>

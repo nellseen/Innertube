@@ -104,7 +104,7 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-            {album.title}
+            {typeof album.title === 'string' ? album.title : ''}
           </h1>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm text-white/60 mt-2">
@@ -116,11 +116,11 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
                   a.id ? 'hover:underline cursor-pointer' : ''
                 }`}
               >
-                {a.name}
+                {typeof a?.name === 'string' ? a.name : ''}
                 {i < album.artists.length - 1 ? ', ' : ''}
               </span>
             ))}
-            {album.year && <span>• {album.year}</span>}
+            {album.year && typeof album.year === 'string' && <span>• {album.year}</span>}
             <span>• {tracks.length} tracks</span>
           </div>
 

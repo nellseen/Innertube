@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
-import { innertubeService } from '../innertube.js';
+import { innertubeService, toSafeString } from '../innertube.js';
 import { appCache } from '../cache.js';
 
 const router = Router();
@@ -352,23 +352,26 @@ router.get('/chord', async (req: Request, res: Response) => {
       const songItem = searchRes.results?.songs?.[0];
       if (songItem) {
         resolvedVideoId = songItem.id;
-        songTitle = songItem.title;
-        songArtist = songItem.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist';
-        thumbnail = songItem.thumbnail;
+        songTitle = toSafeString(songItem.title, query || 'Unknown Title');
+        songArtist = songItem.artists?.map((a: any) => toSafeString(a?.name || a)).filter(Boolean).join(', ') || 'Unknown Artist';
+        thumbnail = songItem.thumbnail || '';
       } else {
         // Fallback to query as title
-        songTitle = query;
+        songTitle = toSafeString(query, 'Unknown Title');
         songArtist = 'Unknown Artist';
       }
     } else if (!songTitle) {
       try {
         const meta = await innertubeService.getSong(resolvedVideoId);
-        songTitle = meta.title;
-        songArtist = meta.artists?.map((a: { name: string }) => a.name).join(', ') || '';
-        thumbnail = meta.thumbnail;
+        songTitle = toSafeString(meta.title, 'Music Track');
+        songArtist = meta.artists?.map((a: any) => toSafeString(a?.name || a)).filter(Boolean).join(', ') || '';
+        thumbnail = meta.thumbnail || '';
       } catch {
         songTitle = 'Music Track';
       }
+    } else {
+      songTitle = toSafeString(songTitle, 'Music Track');
+      songArtist = toSafeString(songArtist, '');
     }
 
     // Step 2: Check Curated Fast Database

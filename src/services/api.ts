@@ -24,6 +24,37 @@ export class ApiError extends Error {
   }
 }
 
+export function deepSanitize<T>(data: T): T {
+  if (data === null || data === undefined) return data;
+  if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') return data;
+
+  if (Array.isArray(data)) {
+    return data.map((item) => deepSanitize(item)) as unknown as T;
+  }
+
+  if (typeof data === 'object') {
+    const obj = data as Record<string, any>;
+    // Check if this object is an Innertube Text / Run object with rtl or runs
+    if ('rtl' in obj) {
+      if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim() as unknown as T;
+      if (typeof obj.simpleText === 'string' && obj.simpleText.trim()) return obj.simpleText.trim() as unknown as T;
+      if (Array.isArray(obj.runs)) {
+        const text = obj.runs.map((r: any) => (typeof r === 'string' ? r : r?.text || '')).join('').trim();
+        return text as unknown as T;
+      }
+      return '' as unknown as T;
+    }
+
+    const clean: Record<string, any> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      clean[key] = deepSanitize(val);
+    }
+    return clean as unknown as T;
+  }
+
+  return data;
+}
+
 async function request<T>(
   endpoint: string,
   options?: RequestInit & { signal?: AbortSignal }
@@ -52,7 +83,7 @@ async function request<T>(
       );
     }
 
-    return data;
+    return deepSanitize(data);
   } catch (err: any) {
     if (err.name === 'AbortError') {
       throw err;

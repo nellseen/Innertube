@@ -142,7 +142,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             onClick={onOpenFullscreen}
             className="text-sm font-semibold text-white/90 hover:text-white truncate cursor-pointer transition-colors"
           >
-            {currentTrack.title}
+            {typeof currentTrack.title === 'string' ? currentTrack.title : ''}
           </h4>
           <p className="text-xs text-white/40 truncate mt-0.5">
             {((Array.isArray(currentTrack.artists)
@@ -158,7 +158,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
                   a.id ? 'cursor-pointer hover:underline' : ''
                 }`}
               >
-                {a.name}
+                {typeof a?.name === 'string' ? a.name : ''}
                 {i < arr.length - 1 ? ', ' : ''}
               </span>
             ))}

@@ -74,6 +74,61 @@ function isValidVideoId(id?: any): boolean {
   return /^[a-zA-Z0-9_-]{11}$/.test(id) && !id.startsWith('PL') && !id.startsWith('VL') && !id.startsWith('UC') && !id.startsWith('MP');
 }
 
+// Universal extractor: converts any YouTube Text object / Run / string into a clean string, never returning { rtl: boolean }
+export function toSafeString(val: any, fallback = ''): string {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'string') return val.trim();
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'boolean') return '';
+
+  // If object has runs array (YouTube Text / Runs format)
+  if (Array.isArray(val.runs)) {
+    const combined = val.runs
+      .map((r: any) => (typeof r === 'string' ? r : r?.text || ''))
+      .join('')
+      .trim();
+    if (combined) return combined;
+  }
+
+  // If Innertube Text instance or object with .text string
+  if (typeof val.text === 'string' && val.text.trim()) {
+    return val.text.trim();
+  }
+  if (val.text && typeof val.text === 'object') {
+    const nested = toSafeString(val.text);
+    if (nested) return nested;
+  }
+
+  // If object has .simpleText string
+  if (typeof val.simpleText === 'string' && val.simpleText.trim()) {
+    return val.simpleText.trim();
+  }
+
+  // If object has .toString() implementation that is not default Object.prototype.toString
+  if (typeof val.toString === 'function') {
+    try {
+      const str = val.toString();
+      if (typeof str === 'string' && str !== '[object Object]' && str.trim()) {
+        return str.trim();
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // If object has .name string
+  if (typeof val.name === 'string' && val.name.trim()) {
+    return val.name.trim();
+  }
+
+  // If object has .title string
+  if (typeof val.title === 'string' && val.title.trim()) {
+    return val.title.trim();
+  }
+
+  return fallback;
+}
+
 // Normalizer: Song
 export function normalizeSong(item: any): SongItem | null {
   if (!item) return null;
@@ -86,30 +141,32 @@ export function normalizeSong(item: any): SongItem | null {
 
   if (!id) return null;
 
-  const title = item.title?.text || item.title || 'Unknown Title';
+  const title = toSafeString(item.title, 'Unknown Title');
 
   const artists: { id?: string; name: string }[] = [];
   if (Array.isArray(item.artists)) {
     for (const a of item.artists) {
       if (typeof a === 'string') {
-        artists.push({ name: a });
-      } else if (a && (a.name || a.text)) {
-        artists.push({ id: a.id || a.channel_id, name: a.name || a.text });
+        artists.push({ name: a.trim() });
+      } else if (a) {
+        const aName = toSafeString(a.name || a.text || a);
+        if (aName) {
+          artists.push({ id: a.id || a.channel_id, name: aName });
+        }
       }
     }
   } else if (item.author) {
-    const authorName = typeof item.author === 'string' ? item.author : item.author.name || item.author.text;
-    if (authorName) artists.push({ id: item.author.id, name: authorName });
+    const authorName = toSafeString(item.author);
+    if (authorName) artists.push({ id: item.author?.id, name: authorName });
   }
 
   let albumInfo: { id?: string; name: string } | undefined;
   if (item.album) {
-    if (typeof item.album === 'string') {
-      albumInfo = { name: item.album };
-    } else if (item.album.name || item.album.text || item.album.title) {
+    const albName = toSafeString(item.album?.name || item.album?.text || item.album?.title || item.album);
+    if (albName) {
       albumInfo = {
-        id: item.album.id || item.album.browse_id,
-        name: item.album.name || item.album.text || item.album.title,
+        id: item.album?.id || item.album?.browse_id,
+        name: albName,
       };
     }
   }
@@ -117,11 +174,11 @@ export function normalizeSong(item: any): SongItem | null {
   const durationSec =
     typeof item.duration?.seconds === 'number'
       ? item.duration.seconds
-      : parseDuration(item.duration?.text || item.duration);
+      : parseDuration(toSafeString(item.duration?.text || item.duration));
 
   const thumbnail = getBestThumbnail(item.thumbnails || item.thumbnail);
   const isExplicit = Array.isArray(item.badges)
-    ? item.badges.some((b: any) => b.label?.toLowerCase().includes('explicit') || b.is_explicit)
+    ? item.badges.some((b: any) => toSafeString(b.label).toLowerCase().includes('explicit') || b.is_explicit)
     : false;
 
   return {
@@ -142,17 +199,17 @@ export function normalizeArtist(item: any): ArtistItem | null {
   const id = item.id || item.channel_id || item.browse_id || item.endpoint?.payload?.browseId;
   if (!id || isValidVideoId(id)) return null;
 
-  const name = item.name?.text || item.name || item.title?.text || item.title || 'Unknown Artist';
+  const name = toSafeString(item.name || item.title, 'Unknown Artist');
   const thumbnail = getBestThumbnail(item.thumbnails || item.thumbnail);
-  const subscribers = item.subscribers?.text || item.subscribers || item.subtitle?.text;
-  const description = item.description?.text || item.description;
+  const subscribers = toSafeString(item.subscribers || item.subtitle);
+  const description = toSafeString(item.description);
 
   return {
     id,
     name,
     thumbnail,
-    subscribers,
-    description,
+    subscribers: subscribers || undefined,
+    description: description || undefined,
   };
 }
 
@@ -162,26 +219,29 @@ export function normalizeAlbum(item: any): AlbumItem | null {
   const id = item.id || item.browse_id || item.album_id || item.endpoint?.payload?.browseId;
   if (!id || isValidVideoId(id) || id.startsWith('UC')) return null;
 
-  const title = item.title?.text || item.title || 'Unknown Album';
+  const title = toSafeString(item.title, 'Unknown Album');
   const artists: { id?: string; name: string }[] = [];
   if (Array.isArray(item.artists)) {
     for (const a of item.artists) {
-      artists.push({ id: a.id, name: a.name || a.text });
+      const aName = toSafeString(a?.name || a?.text || a);
+      if (aName) {
+        artists.push({ id: a.id, name: aName });
+      }
     }
   } else if (item.author) {
-    const authorName = typeof item.author === 'string' ? item.author : item.author.name || item.author.text;
+    const authorName = toSafeString(item.author);
     if (authorName) artists.push({ id: item.author.id, name: authorName });
   }
 
-  const year = item.year?.text || item.year || item.subtitle?.text;
+  const year = toSafeString(item.year || item.subtitle);
   const thumbnail = getBestThumbnail(item.thumbnails || item.thumbnail);
-  const trackCount = item.track_count || item.song_count;
+  const trackCount = typeof item.track_count === 'number' ? item.track_count : typeof item.song_count === 'number' ? item.song_count : undefined;
 
   return {
     id,
     title,
     artists: artists.length > 0 ? artists : [{ name: 'Various Artists' }],
-    year,
+    year: year || undefined,
     thumbnail,
     trackCount,
   };
@@ -193,19 +253,19 @@ export function normalizePlaylist(item: any): PlaylistItem | null {
   const id = item.id || item.playlist_id || item.browse_id || item.endpoint?.payload?.browseId;
   if (!id || isValidVideoId(id) || id.startsWith('UC')) return null;
 
-  const title = item.title?.text || item.title || 'Unknown Playlist';
-  const author = item.author?.name || item.author?.text || item.author;
+  const title = toSafeString(item.title, 'Unknown Playlist');
+  const author = toSafeString(item.author);
   const thumbnail = getBestThumbnail(item.thumbnails || item.thumbnail);
-  const trackCount = item.track_count || item.song_count;
-  const description = item.description?.text || item.description;
+  const trackCount = typeof item.track_count === 'number' ? item.track_count : typeof item.song_count === 'number' ? item.song_count : undefined;
+  const description = toSafeString(item.description);
 
   return {
     id,
     title,
-    author,
+    author: author || undefined,
     thumbnail,
     trackCount,
-    description,
+    description: description || undefined,
   };
 }
 
@@ -411,12 +471,13 @@ export class InnertubeService {
 
     if (home?.sections && Array.isArray(home.sections)) {
       for (const rawSec of home.sections) {
-        const title =
+        const title = toSafeString(
           rawSec.header?.title?.text ||
           rawSec.header?.title ||
           rawSec.title?.text ||
-          rawSec.title ||
-          'Featured Releases';
+          rawSec.title,
+          'Featured Releases'
+        );
         const rawItems = rawSec.contents || [];
         const items: any[] = [];
 
@@ -497,12 +558,13 @@ export class InnertubeService {
 
     if (explore?.sections && Array.isArray(explore.sections)) {
       for (const rawSec of explore.sections) {
-        const title =
+        const title = toSafeString(
           rawSec.header?.title?.text ||
           rawSec.header?.title ||
           rawSec.title?.text ||
-          rawSec.title ||
-          'Trending';
+          rawSec.title,
+          'Trending'
+        );
         const rawItems = rawSec.contents || [];
         const items: any[] = [];
 
@@ -602,24 +664,30 @@ export class InnertubeService {
         info = await yt.music.getInfo(videoId).catch(() => null);
       }
 
-      const title =
+      const title = toSafeString(
         info?.primary_info?.title?.text ||
+        info?.primary_info?.title ||
         info?.basic_info?.title ||
-        info?.title ||
-        'Unknown Title';
-      const author =
+        info?.title,
+        'Unknown Title'
+      );
+      const author = toSafeString(
         info?.secondary_info?.owner?.author?.name ||
+        info?.secondary_info?.owner?.author ||
         info?.basic_info?.author ||
-        info?.author ||
-        'Unknown Artist';
+        info?.author,
+        'Unknown Artist'
+      );
       const duration = info?.basic_info?.duration || 0;
       const thumbnails =
         info?.basic_info?.thumbnail ||
         info?.basic_info?.thumbnails ||
         `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-      const description =
+      const description = toSafeString(
         info?.basic_info?.short_description ||
-        info?.secondary_info?.description?.text;
+        info?.secondary_info?.description?.text ||
+        info?.secondary_info?.description
+      );
 
       const rawThumb = getBestThumbnail(thumbnails);
       const thumbnail =
@@ -1190,11 +1258,13 @@ export class InnertubeService {
 
     const artistData: any = await yt.music.getArtist(artistId);
 
-    const name =
-      artistData.header?.title?.text || artistData.header?.title || 'Unknown Artist';
+    const name = toSafeString(
+      artistData.header?.title?.text || artistData.header?.title,
+      'Unknown Artist'
+    );
     const thumbnail = getBestThumbnail(artistData.header?.thumbnails || artistData.header?.thumbnail);
-    const description = artistData.header?.description?.text || artistData.header?.description;
-    const subscribers = artistData.header?.subscribers?.text || artistData.header?.subscribers;
+    const description = toSafeString(artistData.header?.description?.text || artistData.header?.description);
+    const subscribers = toSafeString(artistData.header?.subscribers?.text || artistData.header?.subscribers);
 
     const artist: ArtistItem = {
       id: artistId,
@@ -1467,12 +1537,13 @@ export class InnertubeService {
 
     const rawAlbum: any = await yt.music.getAlbum(albumId);
 
-    const title =
+    const title = toSafeString(
       rawAlbum.header?.title?.text ||
       rawAlbum.header?.title ||
       rawAlbum.title?.text ||
-      rawAlbum.title ||
-      'Unknown Album';
+      rawAlbum.title,
+      'Unknown Album'
+    );
     const thumbnail = getBestThumbnail(
       rawAlbum.header?.thumbnails ||
       rawAlbum.header?.thumbnail ||
@@ -1483,16 +1554,22 @@ export class InnertubeService {
 
     if (Array.isArray(rawAlbum.artists)) {
       for (const a of rawAlbum.artists) {
-        artists.push({ id: a.id, name: a.name || a.text });
+        const aName = toSafeString(a?.name || a?.text || a);
+        if (aName) {
+          artists.push({ id: a.id, name: aName });
+        }
       }
     } else if (rawAlbum.author) {
-      artists.push({
-        id: rawAlbum.author.id,
-        name: rawAlbum.author.name || rawAlbum.author.text || rawAlbum.author,
-      });
+      const aName = toSafeString(rawAlbum.author?.name || rawAlbum.author?.text || rawAlbum.author);
+      if (aName) {
+        artists.push({
+          id: rawAlbum.author.id,
+          name: aName,
+        });
+      }
     }
 
-    const year = rawAlbum.year?.text || rawAlbum.year;
+    const year = toSafeString(rawAlbum.year?.text || rawAlbum.year);
     const trackCount = rawAlbum.contents?.length || rawAlbum.track_count;
 
     const album: AlbumItem = {
@@ -1547,14 +1624,17 @@ export class InnertubeService {
       rawPlaylist = await yt.music.getPlaylist(playlistId);
     }
 
-    const title = rawPlaylist.title?.text || rawPlaylist.title || 'Playlist';
-    const author =
+    const title = toSafeString(rawPlaylist.title?.text || rawPlaylist.title, 'Playlist');
+    const author = toSafeString(
       rawPlaylist.author?.name ||
       rawPlaylist.author?.text ||
       rawPlaylist.header?.author?.name ||
-      'YouTube Music';
+      rawPlaylist.header?.author ||
+      rawPlaylist.author,
+      'YouTube Music'
+    );
     const thumbnail = getBestThumbnail(rawPlaylist.thumbnails || rawPlaylist.thumbnail);
-    const description = rawPlaylist.description?.text || rawPlaylist.description;
+    const description = toSafeString(rawPlaylist.description?.text || rawPlaylist.description);
 
     const tracks: SongItem[] = [];
     const contents = rawPlaylist.contents || rawPlaylist.items || [];
