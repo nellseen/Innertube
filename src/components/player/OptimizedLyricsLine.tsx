@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { toSafeText } from '../../utils/text.js';
 
 interface OptimizedLyricsLineProps {
   index: number;
@@ -56,7 +57,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
         }`}
       >
         {/* Original Lyrics Line */}
-        <p className="leading-relaxed tracking-normal">{text}</p>
+        <p className="leading-relaxed tracking-normal">{toSafeText(text)}</p>
 
         {/* Optional Romaji / Phonetic helper */}
         {showRomaji && romaji && (
@@ -65,7 +66,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
               isActive ? 'text-cyan-300 font-medium' : 'text-cyan-300/40'
             }`}
           >
-            {romaji}
+            {toSafeText(romaji)}
           </p>
         )}
 
@@ -76,7 +77,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
               isActive ? 'text-indigo-200 font-medium' : 'text-indigo-200/40'
             }`}
           >
-            {translation}
+            {toSafeText(translation)}
           </p>
         )}
       </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Song, CustomPlaylist } from '../types/music.js';
+import { toSafeText } from '../utils/text.js';
 
 interface LibraryContextType {
   favorites: Song[];
@@ -24,13 +25,38 @@ const STORAGE_KEYS = {
 };
 
 function sanitizeSong(s: any): Song {
+  if (!s || typeof s !== 'object') {
+    return {
+      id: '',
+      title: 'Unknown Title',
+      artists: [{ name: 'Unknown Artist' }],
+      duration: 0,
+      durationFormatted: '0:00',
+      thumbnail: '',
+    };
+  }
+
+  const artists: { id?: string; name: string }[] = [];
+  if (Array.isArray(s.artists)) {
+    for (const a of s.artists) {
+      const aName = toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a);
+      if (aName) {
+        artists.push({ id: a?.id, name: aName });
+      }
+    }
+  } else if (s.artist) {
+    const aName = toSafeText(s.artist);
+    if (aName) artists.push({ name: aName });
+  }
+
   return {
     ...s,
-    artists: Array.isArray(s?.artists)
-      ? s.artists
-      : typeof s?.artist === 'string'
-      ? [{ name: s.artist }]
-      : [{ name: 'Unknown Artist' }],
+    id: typeof s.id === 'string' ? s.id : '',
+    title: toSafeText(s.title, 'Unknown Title'),
+    artists: artists.length > 0 ? artists : [{ name: 'Unknown Artist' }],
+    thumbnail: typeof s.thumbnail === 'string' ? s.thumbnail : '',
+    duration: typeof s.duration === 'number' ? s.duration : 0,
+    durationFormatted: typeof s.durationFormatted === 'string' ? s.durationFormatted : '0:00',
   };
 }
 

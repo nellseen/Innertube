@@ -4,6 +4,7 @@ import type { Album, Song, NavigationPage } from '../types/music.js';
 import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface AlbumPageProps {
   albumId: string;
@@ -104,7 +105,7 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-            {typeof album.title === 'string' ? album.title : ''}
+            {toSafeText(album.title, 'Unknown Album')}
           </h1>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm text-white/60 mt-2">
@@ -116,11 +117,11 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
                   a.id ? 'hover:underline cursor-pointer' : ''
                 }`}
               >
-                {typeof a?.name === 'string' ? a.name : ''}
+                {toSafeText(a?.name, 'Various Artists')}
                 {i < album.artists.length - 1 ? ', ' : ''}
               </span>
             ))}
-            {album.year && typeof album.year === 'string' && <span>• {album.year}</span>}
+            {album.year && <span>• {toSafeText(album.year)}</span>}
             <span>• {tracks.length} tracks</span>
           </div>
 

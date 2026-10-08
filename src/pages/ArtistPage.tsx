@@ -5,6 +5,7 @@ import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { CardItem } from '../components/cards/CardItem.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface ArtistPageProps {
   artistId: string;
@@ -138,19 +139,19 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({ artistId, onNavigate }) 
           </div>
 
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight truncate">
-            {typeof artist.name === 'string' ? artist.name : ''}
+            {toSafeText(artist.name, 'Unknown Artist')}
           </h1>
 
-          {artist.subscribers && typeof artist.subscribers === 'string' && (
+          {artist.subscribers && (
             <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-white/50 mt-1.5 font-medium">
               <Users className="w-3.5 h-3.5" />
-              <span>{artist.subscribers}</span>
+              <span>{toSafeText(artist.subscribers)}</span>
             </div>
           )}
 
-          {artist.description && typeof artist.description === 'string' && (
+          {artist.description && (
             <p className="text-xs text-white/40 line-clamp-2 mt-2 max-w-2xl">
-              {artist.description}
+              {toSafeText(artist.description)}
             </p>
           )}
 

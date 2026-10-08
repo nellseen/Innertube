@@ -27,6 +27,7 @@ import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
 import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
 import { ChordLyricsViewer } from '../chords/ChordLyricsViewer.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface FullscreenPlayerProps {
   isOpen: boolean;
@@ -125,9 +126,9 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   const artistName = useMemo(() => {
     if (!currentTrack) return 'Unknown Artist';
     return Array.isArray(currentTrack.artists)
-      ? currentTrack.artists.map((a) => a.name).join(', ')
+      ? currentTrack.artists.map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a, 'Unknown Artist')).join(', ')
       : typeof (currentTrack as any).artist === 'string'
-      ? (currentTrack as any).artist
+      ? toSafeText((currentTrack as any).artist, 'Unknown Artist')
       : 'Unknown Artist';
   }, [currentTrack]);
 
@@ -327,18 +328,14 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             </div>
             <div className="text-center max-w-lg">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">
-                {currentTrack.title}
+                {toSafeText(currentTrack.title, 'Unknown Title')}
               </h2>
               <p className="text-sm sm:text-base text-white/50 truncate mt-1">
-                {Array.isArray(currentTrack.artists)
-                  ? currentTrack.artists.map((a) => a.name).join(', ')
-                  : typeof (currentTrack as any).artist === 'string'
-                  ? (currentTrack as any).artist
-                  : 'Unknown Artist'}
+                {artistName}
               </p>
               {currentTrack.album && (
                 <p className="text-xs text-white/30 truncate mt-0.5">
-                  {currentTrack.album.name}
+                  {toSafeText(currentTrack.album.name)}
                 </p>
               )}
             </div>
@@ -512,12 +509,12 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{song.title}</p>
+                  <p className="text-sm font-semibold text-white truncate">{toSafeText(song.title, 'Unknown Title')}</p>
                   <p className="text-xs text-white/40 truncate">
                     {Array.isArray(song.artists)
-                      ? song.artists.map((a) => a.name).join(', ')
+                      ? song.artists.map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a, 'Unknown Artist')).join(', ')
                       : typeof (song as any).artist === 'string'
-                      ? (song as any).artist
+                      ? toSafeText((song as any).artist, 'Unknown Artist')
                       : 'Unknown Artist'}
                   </p>
                 </div>

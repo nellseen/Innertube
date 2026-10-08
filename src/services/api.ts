@@ -10,6 +10,8 @@ import type {
   SponsorBlockResponse,
 } from '../types/music.js';
 
+import { toSafeText } from '../utils/text.js';
+
 const BASE_URL = '/api';
 
 export class ApiError extends Error {
@@ -34,15 +36,13 @@ export function deepSanitize<T>(data: T): T {
 
   if (typeof data === 'object') {
     const obj = data as Record<string, any>;
-    // Check if this object is an Innertube Text / Run object with rtl or runs
-    if ('rtl' in obj) {
-      if (typeof obj.text === 'string' && obj.text.trim()) return obj.text.trim() as unknown as T;
-      if (typeof obj.simpleText === 'string' && obj.simpleText.trim()) return obj.simpleText.trim() as unknown as T;
-      if (Array.isArray(obj.runs)) {
-        const text = obj.runs.map((r: any) => (typeof r === 'string' ? r : r?.text || '')).join('').trim();
-        return text as unknown as T;
-      }
-      return '' as unknown as T;
+    // Check if this object is an Innertube Text / Run / RTL object
+    const isTextObject =
+      ('rtl' in obj && !('id' in obj || 'videoId' in obj || 'url' in obj)) ||
+      (Array.isArray(obj.runs) && !('items' in obj || 'songs' in obj || 'tracks' in obj));
+
+    if (isTextObject) {
+      return toSafeText(obj) as unknown as T;
     }
 
     const clean: Record<string, any> = {};

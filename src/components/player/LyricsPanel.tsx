@@ -3,6 +3,7 @@ import { X, Mic2, RefreshCw, ExternalLink, Radio, Languages, Guitar } from 'luci
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
 import { ChordLyricsViewer } from '../chords/ChordLyricsViewer.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface LyricsPanelProps {
   isOpen: boolean;
@@ -62,9 +63,9 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
   const artistName = useMemo(() => {
     if (!currentTrack) return 'Unknown Artist';
     return Array.isArray(currentTrack.artists)
-      ? currentTrack.artists.map((a) => a.name).join(', ')
+      ? currentTrack.artists.map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a, 'Unknown Artist')).join(', ')
       : typeof (currentTrack as any).artist === 'string'
-      ? (currentTrack as any).artist
+      ? toSafeText((currentTrack as any).artist, 'Unknown Artist')
       : 'Unknown Artist';
   }, [currentTrack]);
 
@@ -193,7 +194,7 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
       {currentTrack && (
         <div className="px-5 py-3 border-b border-white/[0.04] flex items-center justify-between shrink-0 gap-2 bg-white/[0.01]">
           <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-bold text-white truncate">{currentTrack.title}</h4>
+            <h4 className="text-sm font-bold text-white truncate">{toSafeText(currentTrack.title, 'Unknown Title')}</h4>
             <p className="text-xs text-white/40 truncate mt-0.5">{artistName}</p>
           </div>
 

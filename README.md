@@ -22,12 +22,21 @@ A premium full-stack dark iOS Glassmorphism music streaming, lyrics, and interac
   - **Transpose Nada Real-Time**: Transpose semitone (`-11` hingga `+11`) menggunakan Tonal.js.
   - **Diagram Fret & Teori Nada**: Popover dan modal interaktif dengan diagram fretboard gitar (posisi jari E A D G B e), susunan interval, dan audio synthesizer nada chord Web Audio.
   - **Generator Harmoni AI & Fallback Cepat**: Menggunakan `@google/genai` (`gemini-3.8-flash`), katalog chord curated, dan engine progresi harmonik diatonis otomatis.
-- **Full Discovery (Discover Page)**:
+- **Full Discovery & Search Engine (Halaman Discover & Pencarian)**:
+  - **Riwayat Pencarian Lokal (Search History)**:
+    - Menyimpan otomatis kata kunci pencarian yang berhasil ke dalam penyimpanan lokal (`localStorage`).
+    - Menampilkan riwayat pencarian dalam bentuk chip interaktif yang dapat langsung diklik untuk mencari ulang secara instan.
+    - Dilengkapi tombol hapus per kata kunci (`X`) serta opsi **Hapus Semua** (`Clear All`).
+    - **Pencarian Populer & Rekomendasi Genre**: Chip saran cepat (Taylor Swift, Lofi Beats, Bernadya, Pop Indo, Rock Hits, Acoustic Guitar, Jazz & Blues, dll.).
   - **Popular Artists Showcase**: Carousel artis global teratas dengan metadata terverifikasi, jumlah audiens bulanan, dan tombol putar instan.
   - Curated Home feed sections and dynamic release carousels.
   - Trending charts and global releases.
   - Search songs, artists, albums, and playlists with debounce and request cancellation (`AbortController`).
   - Search pagination with continuation support.
+- **Universal Text Sanitization & Stabilitas React**:
+  - Middleware sanitasi otomatis respons JSON Express (`server/sanitizer.ts`) dan client-side deep sanitizer (`src/services/api.ts` & `src/utils/text.ts`).
+  - Menghilangkan sepenuhnya potensi error `Objects are not valid as a React child (found: object with keys {rtl})` yang berasal dari struktur objek teks internal InnerTube / YouTube.js.
+  - Sanitasi otomatis data tersimpan di `localStorage` (lagu favorit, riwayat dengar, dan playlist) agar data lama yang korup langsung diperbaiki secara mulus.
 - **Artist Catalogs with No Artificial Limits**:
   - Unlimited artist song browsing using continuation tokens.
   - Full discography: artist albums, singles, EPs, and fan recommendations.

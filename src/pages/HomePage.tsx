@@ -5,6 +5,7 @@ import { api } from '../services/api.js';
 import { CardItem } from '../components/cards/CardItem.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface HomePageProps {
   onNavigate: (page: NavigationPage) => void;
@@ -238,7 +239,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* Sections */}
       {!isLoading &&
         sections
-          .filter((sec) => typeof sec.title === 'string' && !sec.title.toLowerCase().includes('popular artist'))
+          .filter((sec) => !toSafeText(sec.title).toLowerCase().includes('popular artist'))
           .map((sec, idx) => {
             if (!sec.items || sec.items.length === 0) return null;
 
@@ -248,7 +249,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <section key={idx} className="mb-10">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
-                    {typeof sec.title === 'string' ? sec.title : 'Featured'}
+                    {toSafeText(sec.title, 'Featured')}
                   </h2>
                 </div>
 

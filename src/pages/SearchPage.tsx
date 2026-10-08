@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search as SearchIcon, X, Loader2, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, X, Loader2, Sparkles, Clock, Trash2, Flame } from 'lucide-react';
 import type { NavigationPage, SearchResults, Song, Album, Artist, Playlist } from '../types/music.js';
 import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { CardItem } from '../components/cards/CardItem.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface SearchPageProps {
   initialQuery?: string;
@@ -12,6 +13,21 @@ interface SearchPageProps {
 }
 
 type FilterType = 'all' | 'songs' | 'artists' | 'albums' | 'playlists';
+
+const SEARCH_HISTORY_KEY = 'aetheria_search_history';
+
+const POPULAR_SUGGESTIONS = [
+  'Taylor Swift',
+  'Lofi Beats',
+  'Bernadya',
+  'Pop Indo',
+  'Rock Hits',
+  'Chill Vibes',
+  'Acoustic Guitar',
+  'Jazz & Blues',
+  'Nadhif Basalamah',
+  'Piano Instrumental',
+];
 
 export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNavigate }) => {
   const [query, setQuery] = useState(initialQuery);
@@ -28,8 +44,63 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Search History from localStorage
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(SEARCH_HISTORY_KEY);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => toSafeText(item)).filter(Boolean).slice(0, 20);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  });
+
   const abortControllerRef = useRef<AbortController | null>(null);
   const { playSong } = usePlayer();
+
+  // Save term to search history
+  const saveQueryToHistory = useCallback((term: string) => {
+    const clean = toSafeText(term).trim();
+    if (!clean || clean.length < 2) return;
+    setSearchHistory((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== clean.toLowerCase());
+      const updated = [clean, ...filtered].slice(0, 20);
+      try {
+        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to save search history to localStorage', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Remove single history item
+  const removeHistoryItem = useCallback((term: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSearchHistory((prev) => {
+      const updated = prev.filter((item) => item.toLowerCase() !== term.toLowerCase());
+      try {
+        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update search history in localStorage', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Clear all search history
+  const clearAllHistory = useCallback(() => {
+    setSearchHistory([]);
+    try {
+      localStorage.removeItem(SEARCH_HISTORY_KEY);
+    } catch (e) {
+      console.warn('Failed to remove search history from localStorage', e);
+    }
+  }, []);
 
   // Search executor with AbortController (Section 25)
   const performSearch = useCallback(
@@ -58,6 +129,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
         setResults(data.results);
         setContinuation(data.continuation);
         setHasMore(data.hasMore);
+
+        // Auto-save successful search query to history if results found
+        const hasFound =
+          data.results.songs.length > 0 ||
+          data.results.artists.length > 0 ||
+          data.results.albums.length > 0 ||
+          data.results.playlists.length > 0;
+        if (hasFound) {
+          saveQueryToHistory(searchQuery.trim());
+        }
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           setError(err?.message || 'Search failed');
@@ -66,8 +147,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
         setIsLoading(false);
       }
     },
-    []
+    [saveQueryToHistory]
   );
+
+  // Trigger search on selecting history item or quick recommendation
+  const handleSelectQuery = (term: string) => {
+    setQuery(term);
+    saveQueryToHistory(term);
+    performSearch(term, activeFilter);
+  };
 
   // Debounced query effect
   useEffect(() => {
@@ -126,6 +214,12 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && query.trim()) {
+                saveQueryToHistory(query.trim());
+                performSearch(query.trim(), activeFilter);
+              }
+            }}
             placeholder="Search songs, artists, albums, or playlists..."
             autoFocus
             className="w-full h-13 pl-12 pr-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] focus:border-cyan-400/50 focus:bg-white/[0.08] text-white placeholder-white/30 text-sm md:text-base outline-none transition-all shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl"
@@ -173,16 +267,83 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
         </div>
       )}
 
-      {/* Empty prompt */}
+      {/* Search History & Discover Suggestions (Empty query state) */}
       {!query && !isLoading && (
-        <div className="max-w-md mx-auto text-center py-20 flex flex-col items-center text-white/30">
-          <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-4">
-            <Sparkles className="w-6 h-6 text-cyan-400" />
+        <div className="max-w-2xl mx-auto flex flex-col gap-8 py-4">
+          {/* Recent Searches Section */}
+          {searchHistory.length > 0 && (
+            <section className="p-5 rounded-3xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl shadow-lg">
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2 text-white/90">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-sm font-bold tracking-tight">Riwayat Pencarian</h3>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-white/60 font-mono">
+                    {searchHistory.length}
+                  </span>
+                </div>
+                <button
+                  onClick={clearAllHistory}
+                  className="group flex items-center gap-1.5 text-xs text-white/40 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-rose-500/10 cursor-pointer"
+                  title="Hapus semua riwayat pencarian"
+                >
+                  <Trash2 className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+                  <span>Hapus Semua</span>
+                </button>
+              </div>
+
+              {/* History Chips */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {searchHistory.map((term, idx) => (
+                  <div
+                    key={`${term}-${idx}`}
+                    onClick={() => handleSelectQuery(term)}
+                    className="group inline-flex items-center gap-2 pl-3.5 pr-2 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] hover:border-cyan-400/40 text-white/80 hover:text-white text-xs font-medium transition-all cursor-pointer shadow-sm active:scale-95 select-none"
+                  >
+                    <Clock className="w-3 h-3 text-cyan-400/70 shrink-0" />
+                    <span className="truncate max-w-[200px]">{term}</span>
+                    <button
+                      onClick={(e) => removeHistoryItem(term, e)}
+                      className="p-1 rounded-full text-white/30 hover:text-white hover:bg-white/20 transition-colors ml-0.5"
+                      title="Hapus pencarian ini"
+                      aria-label={`Hapus ${term}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Quick Suggestions & Trending */}
+          <section className="p-5 rounded-3xl bg-white/[0.02] border border-white/[0.06]">
+            <div className="flex items-center gap-2 text-white/80 mb-3.5">
+              <Flame className="w-4 h-4 text-rose-400" />
+              <h3 className="text-sm font-bold tracking-tight">Pencarian Populer & Rekomendasi</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_SUGGESTIONS.map((sug) => (
+                <button
+                  key={sug}
+                  onClick={() => handleSelectQuery(sug)}
+                  className="px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.08] hover:border-rose-400/40 text-white/70 hover:text-white text-xs font-medium transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Prompt card */}
+          <div className="text-center py-6 flex flex-col items-center text-white/30">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center mb-3">
+              <Sparkles className="w-5 h-5 text-cyan-400" />
+            </div>
+            <h3 className="text-sm font-semibold text-white/70">Find What Moves You</h3>
+            <p className="text-xs text-white/30 max-w-xs mt-1">
+              Search for favorite tracks, legendary artists, full albums, or community playlists.
+            </p>
           </div>
-          <h3 className="text-base font-semibold text-white/70">Find What Moves You</h3>
-          <p className="text-xs text-white/30 max-w-xs mt-1">
-            Search for favorite tracks, legendary artists, full albums, or community playlists.
-          </p>
         </div>
       )}
 

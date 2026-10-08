@@ -27,6 +27,7 @@ import { api } from '../../services/api.js';
 import { ChordDetailModal } from './ChordDetailModal.js';
 import { ChordPopover } from './ChordPopover.js';
 import { playSynthesizedChord, getChordTheory } from './ChordTheory.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface ChordToken {
   chord?: string;
@@ -121,20 +122,23 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   } as Song : null);
 
   // Active Song Metadata
-  const [currentSongTitle, setCurrentSongTitle] = useState<string>(
-    typeof effectiveInitialSong?.title === 'string'
-      ? effectiveInitialSong.title
-      : typeof songTitle === 'string' && songTitle !== 'Aku Yang Pernah Meyakini'
-      ? songTitle
-      : 'Cari Lagu'
-  );
-  const [currentArtistName, setCurrentArtistName] = useState<string>(
-    Array.isArray(effectiveInitialSong?.artists)
-      ? effectiveInitialSong.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ')
-      : typeof artistName === 'string'
-      ? artistName
-      : ''
-  );
+  const [currentSongTitle, setCurrentSongTitle] = useState<string>(() => {
+    const fromEffective = toSafeText(effectiveInitialSong?.title);
+    if (fromEffective) return fromEffective;
+    const fromProp = toSafeText(songTitle);
+    if (fromProp && fromProp !== 'Aku Yang Pernah Meyakini') return fromProp;
+    return 'Cari Lagu';
+  });
+  const [currentArtistName, setCurrentArtistName] = useState<string>(() => {
+    if (Array.isArray(effectiveInitialSong?.artists)) {
+      const names = effectiveInitialSong.artists
+        .map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a))
+        .filter(Boolean)
+        .join(', ');
+      if (names) return names;
+    }
+    return toSafeText(artistName);
+  });
   const [currentVideoId, setCurrentVideoId] = useState<string | undefined>(
     effectiveInitialSong?.id
   );
@@ -873,7 +877,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">
-                Memuat Chord: {typeof currentSongTitle === 'string' && currentSongTitle ? currentSongTitle : 'Lagu Pilihan'}
+                Memuat Chord: {toSafeText(currentSongTitle, 'Lagu Pilihan')}
               </h3>
               <p className="text-xs text-white/50 mt-1">
                 {typeof currentArtistName === 'string' && currentArtistName

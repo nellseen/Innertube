@@ -5,6 +5,7 @@ import { api } from '../services/api.js';
 import { CardItem } from '../components/cards/CardItem.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface TrendingPageProps {
   onNavigate: (page: NavigationPage) => void;
@@ -86,7 +87,7 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ onNavigate }) => {
           return (
             <section key={idx} className="mb-10">
               <h2 className="text-lg md:text-xl font-bold text-white tracking-tight mb-4">
-                {typeof sec.title === 'string' ? sec.title : 'Trending'}
+                {toSafeText(sec.title, 'Trending')}
               </h2>
 
               {hasSongsOnly ? (

@@ -23,6 +23,7 @@ import {
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
 import type { Song } from '../../types/music.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface BottomPlayerProps {
   onOpenFullscreen: () => void;
@@ -142,7 +143,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             onClick={onOpenFullscreen}
             className="text-sm font-semibold text-white/90 hover:text-white truncate cursor-pointer transition-colors"
           >
-            {typeof currentTrack.title === 'string' ? currentTrack.title : ''}
+            {toSafeText(currentTrack.title, 'Unknown Title')}
           </h4>
           <p className="text-xs text-white/40 truncate mt-0.5">
             {((Array.isArray(currentTrack.artists)
@@ -158,7 +159,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
                   a.id ? 'cursor-pointer hover:underline' : ''
                 }`}
               >
-                {typeof a?.name === 'string' ? a.name : ''}
+                {toSafeText(a?.name, 'Unknown Artist')}
                 {i < arr.length - 1 ? ', ' : ''}
               </span>
             ))}

@@ -4,6 +4,7 @@ import type { Playlist, Song, NavigationPage } from '../types/music.js';
 import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { toSafeText } from '../utils/text.js';
 
 interface PlaylistPageProps {
   playlistId: string;
@@ -124,17 +125,17 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlistId, onNaviga
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight truncate">
-            {typeof playlist.title === 'string' ? playlist.title : ''}
+            {toSafeText(playlist.title, 'Playlist')}
           </h1>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm text-white/60 mt-2">
-            {playlist.author && typeof playlist.author === 'string' && <span className="font-semibold text-white/90">{playlist.author}</span>}
+            {playlist.author && <span className="font-semibold text-white/90">{toSafeText(playlist.author)}</span>}
             <span>• {tracks.length} tracks</span>
           </div>
 
-          {playlist.description && typeof playlist.description === 'string' && (
+          {playlist.description && (
             <p className="text-xs text-white/40 line-clamp-2 mt-2 max-w-xl">
-              {playlist.description}
+              {toSafeText(playlist.description)}
             </p>
           )}
 

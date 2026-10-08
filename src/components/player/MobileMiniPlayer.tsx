@@ -2,6 +2,7 @@ import React from 'react';
 import { Play, Pause, SkipForward, Guitar } from 'lucide-react';
 import type { Song } from '../../types/music.js';
 import { usePlayer } from '../../contexts/PlayerContext.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface MobileMiniPlayerProps {
   onOpenFullscreen: () => void;
@@ -18,6 +19,15 @@ export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({
   if (!currentTrack) return null;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const artistDisplay = Array.isArray(currentTrack.artists)
+    ? currentTrack.artists
+        .map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a))
+        .filter(Boolean)
+        .join(', ')
+    : typeof (currentTrack as any).artist === 'string'
+    ? toSafeText((currentTrack as any).artist)
+    : 'Unknown Artist';
 
   return (
     <div
@@ -44,14 +54,10 @@ export const MobileMiniPlayer: React.FC<MobileMiniPlayerProps> = ({
       {/* Title & Artist */}
       <div className="flex-1 min-w-0 pr-1">
         <h4 className="text-xs font-semibold text-white truncate">
-          {typeof currentTrack.title === 'string' ? currentTrack.title : ''}
+          {toSafeText(currentTrack.title, 'Unknown Title')}
         </h4>
         <p className="text-[11px] text-white/40 truncate">
-          {Array.isArray(currentTrack.artists)
-            ? currentTrack.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ')
-            : typeof (currentTrack as any).artist === 'string'
-            ? (currentTrack as any).artist
-            : 'Unknown Artist'}
+          {artistDisplay}
         </p>
       </div>
 

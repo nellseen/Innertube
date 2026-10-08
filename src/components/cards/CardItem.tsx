@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 import type { Album, Artist, Playlist, Song } from '../../types/music.js';
+import { toSafeText } from '../../utils/text.js';
 
 interface CardItemProps {
   item: Song | Album | Artist | Playlist;
@@ -15,20 +16,23 @@ export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay 
     ('name' in item && !('title' in item)) ||
     ('subscribers' in item && typeof item.subscribers === 'string');
 
-  const rawTitle = 'title' in item ? item.title : 'name' in item ? item.name : 'Unknown';
-  const title = typeof rawTitle === 'string' ? rawTitle : typeof (rawTitle as any)?.text === 'string' ? (rawTitle as any).text : '';
+  const rawTitle = 'title' in item ? (item as any).title : 'name' in item ? (item as any).name : 'Unknown';
+  const title = toSafeText(rawTitle, 'Unknown');
   let subtitle = '';
 
   if (isArtist) {
     subtitle = 'Artist';
-  } else if ('artists' in item && Array.isArray(item.artists)) {
-    subtitle = item.artists.map((a: any) => (typeof a === 'string' ? a : typeof a?.name === 'string' ? a.name : '')).filter(Boolean).join(', ');
-  } else if ('artist' in item && typeof (item as any).artist === 'string') {
-    subtitle = (item as any).artist;
-  } else if ('author' in item && typeof item.author === 'string') {
-    subtitle = item.author;
-  } else if ('year' in item && typeof item.year === 'string') {
-    subtitle = `Album • ${item.year}`;
+  } else if ('artists' in item && Array.isArray((item as any).artists)) {
+    subtitle = (item as any).artists
+      .map((a: any) => toSafeText(typeof a === 'string' ? a : a?.name || a?.text || a))
+      .filter(Boolean)
+      .join(', ');
+  } else if ('artist' in item && (item as any).artist) {
+    subtitle = toSafeText((item as any).artist);
+  } else if ('author' in item && (item as any).author) {
+    subtitle = toSafeText((item as any).author);
+  } else if ('year' in item && (item as any).year) {
+    subtitle = `Album • ${toSafeText((item as any).year)}`;
   }
 
   return (

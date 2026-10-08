@@ -12,6 +12,7 @@ import playlistRoute from './server/routes/playlist.js';
 import chordRoute from './server/routes/chord.js';
 import { innertubeService } from './server/innertube.js';
 import { appCache } from './server/cache.js';
+import { deepSanitizeResponse } from './server/sanitizer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +33,15 @@ app.use(
 );
 
 app.use(express.json());
+
+// Universal JSON response sanitizer middleware (prevents any { rtl: ... } from leaking)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const originalJson = res.json;
+  res.json = function (body: any) {
+    return originalJson.call(this, deepSanitizeResponse(body));
+  };
+  next();
+});
 
 // API Routes
 app.use('/api', healthRoute);
