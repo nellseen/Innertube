@@ -19,7 +19,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg rounded-3xl bg-[#0D0F18]/95 backdrop-blur-2xl border border-white/10 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-200 overflow-hidden"
+        className="relative w-full max-w-lg rounded-3xl glass-modal p-6 sm:p-7 animate-in zoom-in-95 duration-200 overflow-hidden"
       >
         {/* Ambient Top Glow */}
         <div className="absolute -top-24 -left-24 w-60 h-60 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />

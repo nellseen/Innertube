@@ -64,7 +64,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-32 custom-scrollbar">
       {/* Header Banner */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-cyan-950/60 via-indigo-950/40 to-purple-950/40 border border-white/[0.08] p-6 md:p-8 mb-8 shadow-2xl">
+      <div className="relative rounded-3xl overflow-hidden glass-surface p-6 md:p-8 mb-8">
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-medium mb-3">
             <Sparkles className="w-3.5 h-3.5" />

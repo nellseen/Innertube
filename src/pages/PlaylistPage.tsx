@@ -97,7 +97,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlistId, onNaviga
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-32 custom-scrollbar">
       {/* Playlist Header */}
-      <div className="relative rounded-3xl overflow-hidden bg-white/[0.02] border border-white/[0.08] p-6 md:p-8 mb-8 shadow-2xl flex flex-col sm:flex-row items-center sm:items-end gap-6 md:gap-8">
+      <div className="relative rounded-3xl overflow-hidden glass-surface p-6 md:p-8 mb-8 flex flex-col sm:flex-row items-center sm:items-end gap-6 md:gap-8">
         {/* Glow */}
         <div
           className="absolute inset-0 opacity-20 blur-3xl pointer-events-none -z-10"

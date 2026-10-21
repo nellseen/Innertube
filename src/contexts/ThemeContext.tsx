@@ -15,6 +15,7 @@ export interface ThemeConfig {
   accentClass: string;
   glowClass: string;
   gradient: string;
+  accentGlow?: string;
 }
 
 export const THEMES: Record<ThemeId, ThemeConfig> = {

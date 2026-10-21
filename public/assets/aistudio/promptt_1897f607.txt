@@ -1,0 +1,788 @@
+MASTER PROMPT — AETHERIA MUSIC UI/UX OVERHAUL
+
+LIQUID GLASS • GLASSMORPHISM • MOBILE-FIRST • ZERO BACKEND REGRESSION • FULL TESTING PIPELINE
+
+1. PERAN DAN MISI UTAMA
+
+Bertindak sebagai Senior UI/UX Designer, Senior Frontend Engineer, Backend Integration Engineer, QA Automation Engineer, Performance Engineer, dan DevOps Engineer dalam satu workflow.
+
+Project yang akan dikerjakan adalah Innertube / Aetheria Music, yaitu aplikasi musik yang sudah memiliki source code, komponen frontend, backend, API, dan alur fungsional yang harus dipertahankan.
+
+Tugas utama: melakukan comprehensive UI/UX refactoring dengan desain baru yang terinspirasi oleh referensi visual yang diberikan pengguna. Terapkan perpaduan Apple-inspired Liquid Glass, Glassmorphism, clean minimalism, dan premium music streaming experience.
+
+Ini BUKAN instruksi untuk membuat project baru dari nol, bukan redesign dummy, dan bukan alasan untuk mengganti arsitektur backend.
+
+Prioritas utama:
+
+1. Mempertahankan seluruh fungsi dan alur backend.
+2. Mengubah desain UI/UX secara menyeluruh dan konsisten.
+3. Mempertahankan seluruh fitur yang sudah tersedia.
+4. Meningkatkan usability, aksesibilitas, responsivitas, dan performa.
+5. Memvalidasi hasil melalui testing pipeline lengkap.
+6. Mengintegrasikan seluruh perubahan ke CI/CD tanpa menghilangkan workflow yang sudah ada.
+
+Jangan berhenti pada audit, laporan, mockup, atau rekomendasi. Setelah audit selesai, lanjutkan implementasi nyata di source code project.
+
+---
+
+2. WAJIB AUDIT SOURCE CODE SEBELUM MENULIS KODE
+
+Sebelum melakukan perubahan apa pun:
+
+1. Baca "package.json", lockfile, konfigurasi TypeScript, konfigurasi Vite, konfigurasi lint, konfigurasi testing, dan konfigurasi build.
+2. Petakan seluruh struktur frontend, backend, route, page, layout, component, hooks, context, state management, service, API client, dan model data.
+3. Identifikasi framework, library, versi dependency, serta command yang benar-benar tersedia di project.
+4. Telusuri bagaimana frontend mendapatkan data dari backend dan bagaimana interaksi pengguna memengaruhi state aplikasi.
+5. Identifikasi seluruh fitur yang sudah berfungsi, termasuk fitur yang tidak langsung terlihat di halaman utama.
+6. Catat endpoint, kontrak request/response, format data, event, mekanisme playback, dan dependensi antarkomponen.
+7. Periksa existing test suite dan CI/CD workflow. Pertahankan konfigurasi yang masih valid.
+8. Buat daftar baseline fitur sebelum refactoring untuk digunakan sebagai regression checklist.
+
+Buat pemetaan berikut sebelum implementasi:
+
+- Existing component → tanggung jawab saat ini.
+- Existing data source → komponen yang menggunakannya.
+- Existing interaction → event dan efek sampingnya.
+- Existing API/service → pemanggil dan kontraknya.
+- Existing test → perilaku yang sudah diverifikasi.
+- Existing feature → status sebelum dan sesudah refactoring.
+
+Jangan menganggap sebuah fitur bekerja hanya karena komponennya tersedia. Verifikasi berdasarkan implementasi dan hasil pengujian.
+
+Setelah pemetaan selesai, lanjutkan pengerjaan tanpa meminta persetujuan untuk setiap perubahan UI yang aman.
+
+---
+
+3. ATURAN KERAS: BACKEND TIDAK BOLEH RUSAK
+
+Refactoring difokuskan pada presentation layer dan pengalaman pengguna.
+
+Dilarang melakukan hal berikut tanpa kebutuhan teknis yang terbukti dan pengujian yang memadai:
+
+- Menghapus atau mengganti endpoint backend.
+- Mengubah request/response schema secara tidak kompatibel.
+- Mengganti sumber data asli dengan hardcoded data atau dummy JSON.
+- Mengganti API menjadi simulasi lokal.
+- Menghapus authentication, session, middleware, service, atau mekanisme keamanan yang sudah ada.
+- Mengubah struktur database, schema, migration, atau query hanya untuk menyesuaikan desain.
+- Mengganti business logic dengan implementasi baru yang hasilnya belum setara.
+- Menghapus state management, context, event handler, atau callback yang digunakan fitur lama.
+- Mengubah mekanisme audio streaming hanya demi mempermudah komponen player.
+- Menghilangkan error handling, loading state, retry mechanism, atau fallback yang sudah ada.
+- Membuat komponen UI baru yang hanya tampak interaktif tetapi tidak terhubung ke fungsi sebenarnya.
+
+Pertahankan kompatibilitas dengan backend melalui adapter atau pemisahan presentation logic apabila diperlukan.
+
+Jika perubahan pada backend benar-benar diperlukan, jelaskan alasan teknisnya, pertahankan backward compatibility jika memungkinkan, dan tambahkan integration test yang membuktikan bahwa perilaku lama tetap berjalan.
+
+Jangan melakukan rewrite backend secara menyeluruh hanya karena desain frontend berubah.
+
+---
+
+4. DESIGN SYSTEM — LIQUID GLASS & GLASSMORPHISM
+
+Buat design system yang konsisten untuk seluruh aplikasi.
+
+A. Prinsip visual
+
+Gunakan perpaduan:
+
+- Liquid Glass-inspired translucent surfaces.
+- Glassmorphism yang halus dan berlapis.
+- Minimalist typography.
+- Clean spacing dan visual hierarchy.
+- Rounded corners yang konsisten.
+- Subtle borders dan soft shadows.
+- Artwork sebagai elemen visual utama.
+- Transisi halus dan respons interaksi yang terasa natural.
+- Navigasi sederhana dengan tampilan premium.
+
+Referensi desain pengguna digunakan sebagai acuan komposisi, kesederhanaan, keterbacaan, dan ergonomi mobile. Jangan menyalin elemen banking yang tidak relevan dengan aplikasi musik.
+
+Hasil akhirnya harus terasa seperti produk musik modern yang dirancang khusus untuk perangkat mobile, bukan dashboard admin generik.
+
+B. Material Liquid Glass
+
+Gunakan efek kaca secara terarah, bukan pada semua elemen.
+
+Contoh implementasi CSS yang dapat dijadikan dasar:
+
+:root {
+  --glass-surface: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-blur: 22px;
+  --glass-radius: 24px;
+}
+
+.glass-surface {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 8px 30px rgba(0, 0, 0, 0.10);
+}
+
+Kode tersebut hanya baseline. Sesuaikan dengan sistem CSS, design token, theme provider, dan arsitektur yang sudah ada. Jangan menambahkan stylesheet duplikat atau membuat sistem tema kedua yang bertentangan.
+
+Terapkan material kaca terutama pada:
+
+- Bottom navigation.
+- Mini-player dan playback controls.
+- Floating controls.
+- Search overlay.
+- Context menu.
+- Dialog dan modal.
+- Panel atau toolbar yang memang membutuhkan layering.
+- Player overlay jika sesuai dengan layout yang dipilih.
+
+Hindari blur berlebihan pada area teks, artwork, daftar lagu, dan seluruh background sekaligus. Konten utama harus tetap jelas dan mudah dibaca.
+
+C. Warna dan tema
+
+Pertahankan identitas warna yang sudah dimiliki Aetheria Music jika relevan, termasuk accent cyan, tetapi susun ulang agar lebih harmonis.
+
+Sediakan tema light dan dark apabila keduanya sudah didukung atau dapat ditambahkan tanpa mengganggu sistem tema yang ada.
+
+Persyaratan:
+
+- Kontras teks tetap memadai.
+- Border kaca terlihat pada kedua tema.
+- Warna tombol aktif dan nonaktif jelas.
+- Artwork tidak tertutup overlay berlebihan.
+- Theme switch memperbarui seluruh komponen secara konsisten.
+- Hindari hardcoded colors yang tersebar di setiap komponen.
+- Gunakan semantic design tokens, seperti "background", "surface", "text-primary", "text-secondary", "border", "accent", dan "glass-surface".
+
+Jangan menambahkan efek neon berlebihan, glow yang menyilaukan, atau dekorasi yang membuat aplikasi terasa seperti dashboard hacker.
+
+D. Liquid motion
+
+Animasi harus halus, fungsional, dan ringan.
+
+Implementasikan bila relevan:
+
+- Transisi pergantian halaman.
+- Press feedback pada tombol.
+- Smooth expansion mini-player menjadi full player.
+- Animasi modal dan bottom sheet.
+- Perubahan state play/pause.
+- Transisi tema.
+- Hover feedback khusus perangkat yang mendukung hover.
+- Skeleton loading yang tidak mengganggu konten.
+
+Hormati "prefers-reduced-motion". Sediakan fallback ketika blur atau efek visual tertentu tidak didukung browser.
+
+Jangan membuat animasi yang menghambat klik, memblokir audio controls, atau menimbulkan layout shift.
+
+---
+
+5. ROMBAK SELURUH TATA LETAK UI/UX
+
+Audit semua halaman yang sudah ada. Terapkan sistem desain baru ke seluruh halaman, bukan hanya homepage.
+
+A. Mobile-first navigation
+
+Jadikan perangkat mobile sebagai prioritas utama.
+
+- Gunakan bottom navigation bergaya Liquid Glass jika sesuai dengan informasi arsitektur aplikasi.
+- Pilih item navigasi berdasarkan fitur dan route yang benar-benar tersedia.
+- Jangan menghapus halaman yang tidak muat di navigation bar.
+- Fitur tambahan dapat dipertahankan melalui menu sekunder atau halaman yang sudah tersedia.
+- Berikan active state yang jelas.
+- Hormati safe area pada perangkat dengan notch dan gesture navigation.
+- Hindari navigation bar menutupi konten, tombol, atau progress player.
+- Gunakan label yang ringkas dan icon yang konsisten.
+
+Pada desktop, gunakan layout responsif yang sesuai dengan fitur aplikasi. Sidebar desktop dapat dipertahankan atau diperbarui tanpa memaksa struktur desktop yang sama ke layar mobile.
+
+B. Homepage / Discover
+
+Susun homepage berdasarkan data asli dari backend.
+
+Prioritaskan:
+
+- Header yang ringkas.
+- Search entry point yang mudah ditemukan.
+- Section musik pilihan atau featured content apabila datanya tersedia.
+- Trending songs.
+- Album dan artis.
+- Playlist atau rekomendasi.
+- Konten tambahan yang sudah didukung project.
+
+Gunakan layout editorial dengan hierarki visual yang jelas. Jangan memaksakan semua section ke dalam satu layar atau menampilkan section kosong sebagai dekorasi.
+
+Pertahankan mekanisme fetch, pagination, sorting, filtering, dan navigation yang sudah tersedia.
+
+C. Search
+
+- Input pencarian harus tetap terhubung ke mekanisme pencarian asli.
+- Pertahankan debounce jika memang digunakan.
+- Pertahankan filter kategori yang tersedia.
+- Pertahankan hasil pencarian lagu, artis, album, dan playlist sesuai dukungan backend.
+- Tampilkan loading, empty, error, retry, dan success state yang tepat.
+- Jangan membuat hasil pencarian palsu.
+- Pastikan keyboard mobile tidak menutupi input dan hasil yang sedang dipilih.
+
+D. Library dan playlist
+
+- Pertahankan playlist, lagu favorit, riwayat pemutaran, serta koleksi pengguna yang memang sudah tersedia.
+- Rapikan list item, artwork, metadata, menu aksi, dan empty state.
+- Pertahankan operasi add, remove, reorder, atau edit jika fitur tersebut sudah ada.
+- Tampilkan feedback berdasarkan hasil operasi sebenarnya.
+- Jangan menganggap perubahan berhasil sebelum operasi atau state yang relevan dikonfirmasi.
+
+E. Music player
+
+Player merupakan salah satu komponen terpenting.
+
+Rancang tiga tingkat tampilan apabila sesuai dengan arsitektur saat ini:
+
+1. Compact / Mini Player
+   
+   - Artwork thumbnail.
+   - Judul dan artis.
+   - Play/pause.
+   - Akses cepat ke full player.
+   - Progress indicator jika didukung.
+
+2. Expanded / Full Player
+   
+   - Artwork besar.
+   - Judul dan artis.
+   - Progress bar dan timestamp.
+   - Previous, play/pause, next.
+   - Shuffle dan repeat.
+   - Favorite.
+   - Queue.
+   - Lyrics entry point.
+   - Kontrol tambahan yang sudah tersedia.
+
+3. Queue / Lyrics / Additional Controls
+   
+   - Pertahankan fitur queue dan pengelolaan antrean.
+   - Pertahankan sinkronisasi lirik apabila sudah tersedia.
+   - Pertahankan chord view atau halaman tambahan yang sudah ada.
+   - Gunakan panel, tab, sheet, atau halaman yang sesuai dengan implementasi lama.
+
+Larangan mutlak: jangan membuat playback engine kedua, audio element duplikat, timer progress independen, atau state player terpisah hanya demi desain baru.
+
+Komponen UI wajib menggunakan sumber state playback yang sudah menjadi sumber kebenaran aplikasi. Semua kontrol harus tetap memanggil action atau handler yang benar.
+
+Pastikan:
+
+- Next dan previous tetap berfungsi.
+- Play/pause tidak memulai dua audio session.
+- Progress mengikuti playback sebenarnya.
+- Queue tidak ter-reset tanpa alasan.
+- Lyrics tetap sinkron dengan track dan timestamp.
+- Pergantian halaman tidak menghentikan musik secara tidak sengaja.
+- Mini-player dan full player menunjukkan track serta status yang sama.
+- Loading dan playback error memiliki feedback yang jelas.
+
+F. Artists, albums, detail pages, dan fitur tambahan
+
+Lakukan audit dan refactor terhadap seluruh halaman lain yang ada.
+
+Jangan menghapus:
+
+- Halaman artist.
+- Detail album.
+- Detail playlist.
+- Favorites.
+- Recently played.
+- Lyrics.
+- Chords.
+- Queue.
+- Theme settings.
+- Search filters.
+- Fitur lain yang ditemukan dalam source code.
+
+Nama halaman di atas merupakan checklist audit, bukan izin untuk membuat halaman dummy jika fitur tersebut tidak tersedia.
+
+---
+
+6. COMPONENT ARCHITECTURE
+
+Bangun ulang komponen secara modular dan konsisten tanpa merusak kontrak lama.
+
+Bila sesuai dengan struktur project, kelompokkan menjadi:
+
+- Design tokens dan theme primitives.
+- Shared layout components.
+- Navigation components.
+- Glass surfaces dan overlay components.
+- Song, album, artist, dan playlist cards.
+- Track list dan metadata components.
+- Mini-player dan full-player presentation.
+- Search components.
+- Loading, error, empty, dan retry states.
+- Accessible dialog, menu, dan sheet components.
+
+Persyaratan:
+
+- Reuse komponen untuk pola UI yang sama.
+- Hindari duplikasi logic.
+- Pisahkan presentational component dari business logic.
+- Pertahankan props dan event contract yang masih dibutuhkan.
+- Jangan membuat satu komponen raksasa yang mengelola seluruh aplikasi.
+- Jangan memecah semua komponen menjadi file kecil tanpa alasan.
+- Jangan menghapus file lama sebelum seluruh referensi dan dependensinya diperiksa.
+- Hapus kode usang hanya setelah membuktikan bahwa tidak ada pemakaian yang tersisa.
+
+Gunakan pola dan konvensi yang sudah digunakan project. Jangan mengganti React, Vite, Express, router, state manager, atau framework lain tanpa kebutuhan yang terbukti.
+
+---
+
+7. AKSESIBILITAS DAN RESPONSIVITAS
+
+Pastikan:
+
+- Semua tombol memiliki nama aksesibel.
+- Navigasi keyboard berfungsi.
+- Focus state terlihat.
+- Dialog memiliki focus management yang benar.
+- Semantic HTML digunakan sesuai fungsinya.
+- Informasi penting tidak hanya disampaikan melalui warna.
+- Ukuran target sentuh nyaman pada perangkat mobile.
+- Teks tetap terbaca pada ukuran layar kecil.
+- Layout tidak overflow secara horizontal.
+- Artwork menggunakan aspect ratio yang konsisten.
+- Modal dan bottom sheet tetap dapat dioperasikan dengan keyboard dan layar sentuh.
+- Kontras warna diperiksa.
+- Reduced-motion preference dihormati.
+
+Uji sekurang-kurangnya pada viewport mobile kecil, mobile umum, tablet, dan desktop.
+
+Jangan menggunakan user-agent sniffing untuk menentukan seluruh layout apabila CSS responsive layout sudah mencukupi.
+
+---
+
+8. PERFORMANCE DAN KOMPATIBILITAS
+
+Liquid Glass tidak boleh membuat aplikasi lambat.
+
+- Gunakan "backdrop-filter" secara selektif.
+- Hindari nested blur berlebihan.
+- Hindari animasi layout yang mahal.
+- Utamakan "transform" dan "opacity" untuk animasi yang sesuai.
+- Optimalkan ukuran artwork tanpa merusak kualitas.
+- Pertahankan lazy loading apabila sudah tersedia.
+- Hindari re-render besar yang tidak diperlukan.
+- Hindari event listener dan subscription yang tidak dibersihkan.
+- Hindari memory leak pada player dan komponen yang menggunakan efek.
+- Jangan melakukan polling atau request tambahan hanya untuk dekorasi UI.
+- Pertahankan cache, request deduplication, dan optimasi backend yang sudah ada.
+
+Sediakan fallback jika browser tidak mendukung fitur visual tertentu. Aplikasi harus tetap bisa digunakan tanpa blur atau animasi.
+
+Jangan membuat klaim performa sebelum melakukan pengukuran.
+
+---
+
+9. WAJIB MENERAPKAN TESTING PIPELINE BERURUTAN
+
+Ikuti urutan berikut. Setiap tahap harus menghasilkan bukti yang dapat diverifikasi.
+
+ALUR WAJIB:
+
+"Nulis Kode → Static Test → Unit Test → Integration Test → E2E Test → Load Test → CI/CD Deploy"
+
+Tahapan boleh dijalankan kembali sesuai kebutuhan, tetapi jangan melewati tahap wajib hanya agar pipeline terlihat hijau.
+
+PHASE 1 — CODING
+
+Implementasikan perubahan berdasarkan hasil audit.
+
+Setiap perubahan harus:
+
+- Terfokus pada kebutuhan refactoring.
+- Tidak merusak kontrak backend.
+- Mempertahankan fitur lama.
+- Memiliki error handling yang tepat.
+- Dapat diuji.
+- Tidak meninggalkan dummy handler, TODO kritis, atau tombol tanpa fungsi.
+
+Buat perubahan bertahap sehingga kegagalan dapat dilacak. Jangan mengubah seluruh arsitektur sekaligus tanpa alasan.
+
+PHASE 2 — STATIC TEST
+
+Jalankan pemeriksaan statis menggunakan tool yang sesuai dengan project.
+
+Minimum:
+
+- TypeScript type checking.
+- ESLint atau lint tool yang memang digunakan.
+- Pemeriksaan konfigurasi dan import.
+- Validasi build-time yang tersedia.
+- Pemeriksaan format jika formatter sudah dikonfigurasi.
+
+Contoh command, sesuaikan dengan script yang benar-benar tersedia:
+
+npx tsc --noEmit
+npm run lint
+
+Jangan menganggap command tersebut pasti benar sebelum memeriksa "package.json" dan konfigurasi project.
+
+Persyaratan:
+
+- Tidak ada TypeScript error baru.
+- Tidak ada unresolved import.
+- Tidak ada dependency yang diimpor tetapi tidak tersedia.
+- Tidak ada error lint yang disembunyikan dengan mematikan aturan secara global.
+- Jangan menggunakan "any", "@ts-ignore", atau suppression lain sebagai jalan pintas untuk menghindari perbaikan yang semestinya.
+
+Jika project menggunakan package manager lain, gunakan package manager dan lockfile yang sesuai. Jangan mencampur npm, pnpm, dan yarn sehingga dependency lock menjadi tidak konsisten.
+
+Gate: jika static test gagal, perbaiki penyebabnya sebelum melanjutkan.
+
+PHASE 3 — UNIT TEST
+
+Gunakan framework unit testing yang sudah tersedia. Jika belum tersedia, pilih solusi yang kompatibel dengan stack project dan integrasikan secara minimal.
+
+Uji fungsi dan logika yang relevan, termasuk:
+
+- Mapping data API ke tampilan.
+- Formatting metadata.
+- Pemilihan state aktif.
+- Penanganan loading dan error.
+- Search filtering dan debounce jika digunakan.
+- Playback action dispatch.
+- Perubahan queue.
+- Favorite action.
+- Theme selection.
+- Component state transitions.
+- Utility functions.
+
+Mock hanya dependency eksternal yang memang perlu diisolasi. Jangan mengubah semua business logic menjadi mock sehingga test tidak lagi menguji perilaku nyata.
+
+Uji edge case seperti:
+
+- Data kosong.
+- Field opsional tidak tersedia.
+- API mengembalikan error.
+- Track atau artwork tidak tersedia.
+- State berubah ketika request sedang berjalan.
+- Komponen dilepas saat proses asynchronous masih berlangsung.
+
+Jangan mengejar angka coverage dengan test palsu. Target coverage harus ditetapkan berdasarkan baseline dan risiko; prioritaskan critical paths dan perubahan yang dibuat.
+
+Gate: semua unit test wajib lulus.
+
+PHASE 4 — INTEGRATION TEST
+
+Uji hubungan antarkomponen dan integrasi frontend dengan backend/API.
+
+Pastikan:
+
+- Request menggunakan endpoint yang benar.
+- Header, parameter, dan payload tetap sesuai kontrak.
+- Response dipetakan dengan benar.
+- Loading, success, error, dan retry state berfungsi.
+- Fitur search tetap memperoleh data dari sumber aslinya.
+- Playlist, library, dan favorite menggunakan operasi yang benar.
+- Player tetap terhubung ke mekanisme playback yang sebenarnya.
+- Lyrics dan queue tetap terhubung dengan track aktif.
+- Perubahan tema tidak memengaruhi request atau state backend.
+- Navigasi antarhalaman tidak merusak state yang harus dipertahankan.
+
+Gunakan backend test instance, database test, atau fixture terkontrol jika diperlukan. Jangan melakukan test destruktif terhadap database produksi.
+
+Untuk setiap integration test, pastikan hasil yang diperiksa bukan hanya tampilan visual, tetapi juga request, response, side effect, dan state akhirnya.
+
+Gate: seluruh integration test wajib lulus sebelum E2E.
+
+PHASE 5 — E2E BROWSER AUTOMATION
+
+Gunakan Playwright sebagai pilihan utama apabila kompatibel dengan stack dan environment. Pertahankan tool E2E yang sudah ada jika fungsinya memadai.
+
+Jalankan aplikasi menggunakan konfigurasi dev atau test yang benar. Gunakan browser automation untuk mengoperasikan aplikasi seperti pengguna sungguhan.
+
+Skenario minimum:
+
+1. Aplikasi berhasil dibuka tanpa runtime error.
+2. Homepage memuat data asli.
+3. Navigasi antarrute berfungsi.
+4. Search dapat menerima input dan menampilkan hasil sesuai backend.
+5. Pengguna dapat membuka detail lagu, artis, album, atau playlist yang tersedia.
+6. Play dan pause berfungsi melalui kontrol UI.
+7. Next dan previous bekerja jika didukung player.
+8. Mini-player dan full player konsisten.
+9. Queue dan lyrics berfungsi sesuai implementasi.
+10. Favorite dan library tetap bekerja.
+11. Tema light/dark dapat diganti jika didukung.
+12. Modal, menu, bottom sheet, dan tombol dapat digunakan.
+13. Loading, error, empty state, serta retry tidak membuat aplikasi crash.
+14. Tidak ada tombol yang tampak aktif tetapi tidak melakukan tindakan.
+15. Tidak ada horizontal overflow pada viewport mobile.
+16. Tidak ada elemen utama yang tertutup bottom navigation atau player.
+17. Tidak ada error JavaScript yang tidak ditangani.
+18. Tidak ada request penting yang gagal tanpa alasan.
+19. Navigasi dan interaksi tetap bekerja setelah beberapa kali perpindahan halaman.
+20. UI tetap berfungsi ketika artwork atau response tertentu gagal dimuat.
+
+Uji viewport mobile dan desktop. Gunakan test data terkontrol agar hasil reproducible.
+
+Untuk audio, validasi state playback melalui mekanisme yang memang tersedia. Jangan menganggap audio sungguhan berhasil dimainkan hanya karena tombol berubah menjadi ikon pause. Jika browser test environment tidak mendukung pemutaran audio aktual, tandai keterbatasannya secara eksplisit dan tambahkan verifikasi yang sesuai.
+
+Simpan screenshot, trace, dan laporan kegagalan jika tool mendukungnya.
+
+Gate: seluruh critical E2E scenario harus lulus. Jangan menyembunyikan kegagalan dengan menghapus test yang valid.
+
+PHASE 6 — LOAD TEST
+
+Lakukan load test terhadap server atau endpoint yang memang aman untuk diuji.
+
+Gunakan tool seperti k6 atau tool yang kompatibel dengan environment project.
+
+Jangan langsung membanjiri seluruh endpoint dengan traffic besar. Mulai dari baseline, naikkan beban bertahap, dan tentukan batas sesuai resource serta konfigurasi server.
+
+Tahapan:
+
+1. Baseline dengan beban rendah.
+2. Ramp-up bertahap.
+3. Sustained load.
+4. Spike test apabila aman.
+5. Recovery dan pemeriksaan error setelah traffic berhenti.
+
+Pilih endpoint representatif, misalnya health endpoint, search, metadata, atau endpoint baca lain yang ditemukan saat audit. Endpoint mutasi harus diuji dengan data test dan skenario aman.
+
+Pantau:
+
+- Request per second.
+- Response latency p50, p95, dan p99.
+- Error rate.
+- Timeout.
+- CPU dan memory jika tersedia.
+- Database load jika dapat diukur.
+- Koneksi yang bocor.
+- Dampak pada stabilitas service.
+
+Tetapkan target berdasarkan baseline, resource, dan kebutuhan aplikasi. Jangan mengarang SLA atau mengklaim sanggup menangani jumlah pengguna tertentu tanpa hasil pengukuran.
+
+Jangan menjalankan load test terhadap layanan pihak ketiga, API publik, atau server produksi tanpa izin dan batas traffic yang jelas. Jangan menjadikan load test alasan untuk mengubah backend secara agresif.
+
+Gate: evaluasi hasil, perbaiki regression yang ditemukan, dan ulangi test yang relevan. Jika environment tidak memungkinkan load test penuh, laporkan dengan jujur dan berikan langkah untuk menjalankannya pada environment yang sesuai.
+
+PHASE 7 — CI/CD DEPLOY
+
+Integrasikan pipeline ke CI/CD yang sudah digunakan project. Jika project memakai GitHub Actions, pertahankan workflow lama dan perluas seperlunya.
+
+Urutan workflow:
+
+1. Checkout source code.
+2. Setup runtime dan package manager dengan versi yang sesuai.
+3. Install dependency menggunakan lockfile.
+4. Static test.
+5. Unit test.
+6. Integration test.
+7. Build.
+8. E2E test.
+9. Load test ringan atau scheduled performance test sesuai kebutuhan.
+10. Upload test artifacts jika tersedia.
+11. Deploy hanya setelah seluruh required gates lulus.
+
+Load test penuh dapat dijalankan sebagai scheduled workflow atau environment terpisah untuk mencegah deployment pipeline menjadi tidak stabil. Namun, load test tetap wajib dijalankan dan dilaporkan sebelum pekerjaan dinyatakan selesai.
+
+Persyaratan CI/CD:
+
+- Jangan menaruh token, password, atau API key langsung di source code.
+- Gunakan secrets dan environment variables yang sesuai.
+- Jangan menonaktifkan test untuk mendapatkan green build.
+- Jangan menghapus workflow lama tanpa alasan.
+- Jangan melakukan deployment otomatis ke production jika environment, credentials, dan izin belum tersedia.
+- Gunakan staging bila tersedia.
+- Pertahankan proses rollback yang sudah ada.
+- Pastikan workflow memiliki dependency caching dan artifact handling yang wajar.
+- Jangan mengklaim deployment berhasil hanya karena workflow file berhasil dibuat.
+
+Jika credential atau environment deployment tidak tersedia, selesaikan seluruh pemeriksaan yang dapat dijalankan, validasi konfigurasi, dan laporkan langkah yang masih memerlukan akses pengguna.
+
+Gate: deployment hanya boleh dianggap sukses setelah hasil aktual dari environment target mengonfirmasinya.
+
+---
+
+10. VISUAL REGRESSION DAN KONSISTENSI DESAIN
+
+Selain testing fungsional, periksa konsistensi visual.
+
+Jika tool mendukung screenshot testing, gunakan baseline screenshot yang sesuai.
+
+Bandingkan:
+
+- Homepage.
+- Search results.
+- Detail album.
+- Detail artis.
+- Playlist.
+- Library.
+- Mini-player.
+- Full player.
+- Lyrics.
+- Theme light/dark.
+- Mobile dan desktop layout.
+
+Pastikan:
+
+- Tidak ada teks terpotong.
+- Tidak ada artwork yang gepeng.
+- Tidak ada modal keluar dari viewport.
+- Tidak ada elemen yang saling menimpa.
+- Tidak ada layout shift yang mengganggu.
+- Glass surface tetap terlihat di berbagai background.
+- Teks tetap terbaca.
+- Active, disabled, loading, error, dan pressed states memiliki desain konsisten.
+
+Jangan menggunakan screenshot tunggal dari homepage sebagai bukti seluruh aplikasi selesai.
+
+---
+
+11. SECURITY DAN REGRESSION GUARD
+
+Jangan mengurangi keamanan demi kemudahan testing.
+
+- Pertahankan validasi input.
+- Pertahankan sanitization yang diperlukan.
+- Jangan memasukkan secret ke bundle frontend.
+- Jangan menonaktifkan CORS, authentication, atau middleware untuk membuat test lulus.
+- Jangan menampilkan stack trace atau secret ke pengguna.
+- Jangan menambahkan endpoint berbahaya untuk keperluan testing.
+- Gunakan test environment terisolasi untuk operasi mutasi.
+- Jangan mengubah dependency utama tanpa memeriksa kompatibilitas.
+- Audit dependency baru dan hindari penambahan library yang tidak diperlukan.
+
+Setelah implementasi, bandingkan baseline fitur dengan hasil akhir. Setiap fitur lama harus berstatus:
+
+- Terverifikasi tetap berfungsi.
+- Memerlukan pengujian tambahan.
+- Mengalami regression yang harus diperbaiki.
+
+Tidak boleh menghilangkan fitur secara diam-diam.
+
+---
+
+12. ATURAN PENGAMBILAN KEPUTUSAN
+
+Jika menemukan masalah:
+
+1. Cari akar penyebabnya.
+2. Periksa apakah masalah berasal dari UI, state management, API contract, atau backend.
+3. Perbaiki bagian yang paling kecil dan tepat.
+4. Tambahkan regression test.
+5. Jalankan kembali test yang relevan.
+6. Pastikan perbaikannya tidak merusak fitur lain.
+
+Jika sebuah komponen lama memiliki banyak dependensi, jangan langsung menghapusnya. Buat pengganti yang kompatibel, migrasikan pemakaian secara bertahap, lalu verifikasi hasilnya.
+
+Jika suatu fitur belum dapat diuji karena API atau environment tidak tersedia, jangan menggantinya dengan dummy implementation. Pertahankan integrasinya dan dokumentasikan blocker tersebut.
+
+Jangan mengklaim:
+
+- Semua test lulus tanpa menjalankannya.
+- Backend aman tanpa memverifikasi perubahan.
+- Semua fitur berfungsi hanya dari inspeksi source code.
+- Aplikasi berhasil deploy tanpa bukti deployment.
+- Load test sukses tanpa hasil pengukuran.
+
+Kejujuran hasil lebih penting daripada laporan yang terlihat sempurna.
+
+---
+
+13. DEFINITION OF DONE
+
+Pekerjaan baru dianggap selesai apabila:
+
+- [ ] Audit source code dan baseline fitur selesai.
+- [ ] Design system Liquid Glass konsisten.
+- [ ] Glassmorphism diterapkan dengan terukur dan responsif.
+- [ ] Mobile-first layout selesai.
+- [ ] Desktop layout tetap berfungsi.
+- [ ] Seluruh halaman yang ada sudah diaudit dan diperbarui.
+- [ ] Seluruh fitur lama dipertahankan.
+- [ ] Backend API dan kontrak data tetap kompatibel.
+- [ ] Tidak ada dummy feature atau tombol palsu.
+- [ ] Accessibility dan reduced-motion telah diperiksa.
+- [ ] TypeScript dan static checks lulus.
+- [ ] Unit test lulus.
+- [ ] Integration test lulus.
+- [ ] E2E browser automation lulus.
+- [ ] Load test telah dijalankan dan hasilnya dilaporkan.
+- [ ] Production build berhasil.
+- [ ] CI/CD pipeline telah divalidasi.
+- [ ] Tidak ada critical regression yang belum terselesaikan.
+- [ ] Tidak ada secret atau konfigurasi sensitif yang bocor.
+- [ ] Hasil akhir didokumentasikan secara jujur.
+
+Jika ada checklist yang belum selesai, jangan menyatakan seluruh pekerjaan selesai. Selesaikan yang memungkinkan, perbaiki kegagalan, dan laporkan blocker yang benar-benar memerlukan akses atau resource tambahan.
+
+---
+
+14. FORMAT LAPORAN AKHIR
+
+Setelah implementasi, tampilkan laporan dengan struktur:
+
+A. Perubahan desain
+
+- Halaman yang diperbarui.
+- Komponen yang dibuat ulang.
+- Implementasi Liquid Glass.
+- Responsivitas mobile dan desktop.
+- Perubahan theme dan design token.
+
+B. Backend preservation
+
+- Endpoint dan kontrak yang dipertahankan.
+- Integrasi yang telah diverifikasi.
+- Fitur yang diuji.
+- Perubahan backend, jika memang diperlukan, beserta alasan.
+
+C. Test report
+
+Tahap| Status| Bukti
+Static test| Pass / Fail / Blocked| Command dan hasil
+Unit test| Pass / Fail / Blocked| Jumlah test dan hasil
+Integration test| Pass / Fail / Blocked| Skenario dan hasil
+E2E test| Pass / Fail / Blocked| Browser test dan artifacts
+Load test| Pass / Fail / Blocked| Traffic, latency, error rate
+Build| Pass / Fail / Blocked| Hasil build
+CI/CD| Pass / Fail / Blocked| Workflow run atau blocker
+Deployment| Pass / Fail / Not run| Bukti environment target
+
+D. Regression checklist
+
+- Fitur yang tetap berfungsi.
+- Regression yang ditemukan dan diperbaiki.
+- Masalah yang masih terbuka.
+
+E. File yang diubah
+
+- Daftar file penting.
+- Tujuan perubahan setiap kelompok file.
+- Dependency baru beserta alasan penggunaannya.
+
+F. Cara menjalankan
+
+- Perintah install.
+- Perintah development.
+- Perintah build.
+- Perintah testing.
+- Cara menjalankan CI/CD sesuai project.
+
+Gunakan command yang sudah diverifikasi dari source code, bukan command generik yang belum tentu tersedia.
+
+---
+
+FINAL INSTRUCTION
+
+Mulai dari source code asli Innertube / Aetheria Music yang diberikan pengguna.
+
+Audit terlebih dahulu, pertahankan backend dan seluruh fitur, kemudian lakukan redesign UI/UX secara menyeluruh dengan pendekatan Liquid Glass + Glassmorphism premium yang mengutamakan pengalaman mobile.
+
+Jangan berhenti setelah memberikan analisis atau mockup. Implementasikan perubahan secara nyata, jalankan seluruh testing pipeline sesuai urutan, perbaiki setiap regression yang ditemukan, dan validasi hasil build serta CI/CD.
+
+Jangan mengorbankan fungsi demi visual. Jangan mengorbankan kualitas demi kecepatan. Jangan mengklaim sesuatu berhasil tanpa bukti.
+
+Target akhir adalah Aetheria Music yang tampil jauh lebih premium, konsisten, modern, responsif, dan nyaman digunakan, dengan seluruh alur backend dan fitur asli tetap terjaga.

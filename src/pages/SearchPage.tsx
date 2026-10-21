@@ -222,7 +222,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
             }}
             placeholder="Search songs, artists, albums, or playlists..."
             autoFocus
-            className="w-full h-13 pl-12 pr-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] focus:border-cyan-400/50 focus:bg-white/[0.08] text-white placeholder-white/30 text-sm md:text-base outline-none transition-all shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+            className="w-full h-13 pl-12 pr-12 rounded-2xl glass-input text-white placeholder-white/30 text-sm md:text-base outline-none transition-all shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
           />
           {query && (
             <button
@@ -240,10 +240,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
             <button
               key={f.id}
               onClick={() => setActiveFilter(f.id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all shrink-0 ${
+              className={`px-4 py-2 rounded-2xl text-xs font-semibold tracking-tight transition-all shrink-0 ${
                 activeFilter === f.id
-                  ? 'bg-white text-black shadow-md'
-                  : 'bg-white/[0.04] text-white/60 hover:text-white hover:bg-white/[0.08] border border-white/[0.08]'
+                  ? 'bg-white text-black shadow-lg scale-105'
+                  : 'glass-pill text-white/60 hover:text-white'
               }`}
             >
               {f.label}

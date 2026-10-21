@@ -163,7 +163,7 @@ export const LyricsPanel: React.FC<LyricsPanelProps> = ({ isOpen, onClose }) => 
       : '');
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0B0D15]/95 backdrop-blur-3xl border-l border-white/[0.08] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 select-none">
+    <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 glass-surface border-l border-white/[0.1] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08] shrink-0">
         <div className="flex items-center gap-2">

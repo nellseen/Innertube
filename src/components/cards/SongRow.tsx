@@ -3,6 +3,7 @@ import { Play, Pause, Heart, MoreVertical, ListPlus, Radio, Guitar } from 'lucid
 import type { Song } from '../../types/music.js';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 import { toSafeText } from '../../utils/text.js';
 
 interface SongRowProps {
@@ -26,6 +27,7 @@ export const SongRow: React.FC<SongRowProps> = ({
 }) => {
   const { currentTrack, isPlaying, playSong, togglePlay, addToQueue, playNext } = usePlayer();
   const { isFavorite, toggleFavorite } = useLibrary();
+  const { themeConfig } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
 
   const isCurrent = currentTrack?.id === song.id;
@@ -43,37 +45,59 @@ export const SongRow: React.FC<SongRowProps> = ({
   return (
     <div
       onClick={handlePlayClick}
+      role="row"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handlePlayClick(e as any);
+        }
+      }}
       className={`group relative flex items-center gap-3 md:gap-4 p-2.5 md:p-3 rounded-2xl transition-all duration-200 cursor-pointer select-none ${
         isCurrent
-          ? 'bg-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.3)] border border-white/[0.12]'
-          : 'hover:bg-white/[0.04] border border-transparent hover:border-white/[0.05]'
+          ? 'bg-white/[0.1] border border-white/[0.18] shadow-[0_4px_24px_rgba(0,0,0,0.4)] backdrop-blur-md'
+          : 'hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08]'
       }`}
     >
-      {/* Index or Play icon */}
+      {/* Index or Animated Sound Waves */}
       <div className="w-6 md:w-8 flex items-center justify-center shrink-0">
         {isCurrent ? (
           <button
+            type="button"
             onClick={handlePlayClick}
-            className="text-cyan-400 hover:text-cyan-300 transition-colors"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            className="transition-colors"
+            style={{ color: themeConfig.accentPrimary }}
           >
             {isPlaying ? (
               <div className="flex items-end justify-center gap-0.5 h-4 w-4">
-                <span className="w-1 bg-cyan-400 rounded-full animate-[bounce_0.8s_infinite_200ms] h-full" />
-                <span className="w-1 bg-cyan-400 rounded-full animate-[bounce_0.8s_infinite_400ms] h-2/3" />
-                <span className="w-1 bg-cyan-400 rounded-full animate-[bounce_0.8s_infinite_100ms] h-4/5" />
+                <span
+                  className="w-1 rounded-full animate-[bounce_0.8s_infinite_200ms] h-full"
+                  style={{ backgroundColor: themeConfig.accentPrimary }}
+                />
+                <span
+                  className="w-1 rounded-full animate-[bounce_0.8s_infinite_400ms] h-2/3"
+                  style={{ backgroundColor: themeConfig.accentPrimary }}
+                />
+                <span
+                  className="w-1 rounded-full animate-[bounce_0.8s_infinite_100ms] h-4/5"
+                  style={{ backgroundColor: themeConfig.accentPrimary }}
+                />
               </div>
             ) : (
-              <Play className="w-4 h-4 fill-cyan-400" />
+              <Play className="w-4 h-4 fill-current" />
             )}
           </button>
         ) : (
           <>
-            <span className="text-xs font-medium text-white/30 group-hover:hidden">
-              {typeof index === 'number' ? index + 1 : '•'}
+            <span className="text-xs font-mono text-white/30 group-hover:hidden">
+              {typeof index === 'number' ? String(index + 1).padStart(2, '0') : '•'}
             </span>
             <button
+              type="button"
               onClick={handlePlayClick}
-              className="hidden group-hover:flex items-center justify-center text-white/80 hover:text-white"
+              aria-label={`Play ${toSafeText(song.title)}`}
+              className="hidden group-hover:flex items-center justify-center text-white/90 hover:text-white"
             >
               <Play className="w-3.5 h-3.5 fill-white" />
             </button>
@@ -90,59 +114,56 @@ export const SongRow: React.FC<SongRowProps> = ({
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {isCurrent && isPlaying && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+            <span
+              className="w-2.5 h-2.5 rounded-full animate-ping"
+              style={{ backgroundColor: themeConfig.accentPrimary }}
+            />
           </div>
         )}
       </div>
 
       {/* Title & Artist */}
       <div className="flex-1 min-w-0 pr-2">
-        <div className="flex items-center gap-2">
-          <p
-            className={`text-sm md:text-base font-medium truncate ${
-              isCurrent ? 'text-cyan-400' : 'text-white/90 group-hover:text-white'
-            }`}
-          >
-            {toSafeText(song.title, 'Unknown Title')}
-          </p>
-          {song.isExplicit && (
-            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-white/10 text-white/60 rounded uppercase shrink-0">
-              E
-            </span>
-          )}
-        </div>
-        <p className="text-xs md:text-sm text-white/40 truncate">
-          {(
-            (Array.isArray(song.artists)
-              ? song.artists
-              : typeof (song as any).artist === 'string'
-              ? [{ id: undefined, name: (song as any).artist }]
-              : [{ id: undefined, name: 'Unknown Artist' }]) as { id?: string; name: string }[]
+        <h4
+          className={`text-sm font-semibold truncate transition-colors ${
+            isCurrent ? 'text-white font-bold' : 'text-white/90 group-hover:text-white'
+          }`}
+          style={{
+            color: isCurrent ? themeConfig.accentPrimary : undefined,
+          }}
+        >
+          {toSafeText(song.title, 'Unknown Title')}
+        </h4>
+        <div className="flex items-center gap-1.5 text-xs text-white/45 truncate mt-0.5">
+          {((Array.isArray(song.artists)
+            ? song.artists
+            : typeof (song as any).artist === 'string'
+            ? [{ name: (song as any).artist }]
+            : [{ name: 'Unknown Artist' }]) as { id?: string; name: string }[]
           ).map((a, i, arr) => (
-            <React.Fragment key={i}>
-              <span
-                onClick={(e) => {
-                  if (a.id && onNavigateToArtist) {
-                    e.stopPropagation();
-                    onNavigateToArtist(a.id);
-                  }
-                }}
-                className={`hover:text-white/80 transition-colors ${
-                  a.id ? 'hover:underline cursor-pointer' : ''
-                }`}
-              >
-                {toSafeText(a?.name, 'Unknown Artist')}
-              </span>
-              {i < arr.length - 1 && ', '}
-            </React.Fragment>
+            <span
+              key={i}
+              onClick={(e) => {
+                if (a.id && onNavigateToArtist) {
+                  e.stopPropagation();
+                  onNavigateToArtist(a.id);
+                }
+              }}
+              className={`hover:text-white/80 transition-colors ${
+                a.id ? 'cursor-pointer hover:underline' : ''
+              }`}
+            >
+              {toSafeText(a?.name, 'Unknown Artist')}
+              {i < arr.length - 1 ? ', ' : ''}
+            </span>
           ))}
-        </p>
+        </div>
       </div>
 
-      {/* Album (desktop only) */}
+      {/* Album (Desktop) */}
       {showAlbum && song.album && (
-        <div className="hidden lg:block w-1/4 truncate text-xs text-white/40 pr-4">
+        <div className="hidden lg:block w-1/4 truncate text-xs text-white/40 hover:text-white/70 transition-colors">
           <span
             onClick={(e) => {
               if (song.album?.id && onNavigateToAlbum) {
@@ -150,111 +171,109 @@ export const SongRow: React.FC<SongRowProps> = ({
                 onNavigateToAlbum(song.album.id);
               }
             }}
-            className={`hover:text-white/80 transition-colors ${
-              song.album?.id ? 'hover:underline cursor-pointer' : ''
-            }`}
+            className={song.album?.id ? 'cursor-pointer hover:underline' : ''}
           >
-            {toSafeText(song.album.name)}
+            {toSafeText(song.album.name || (song.album as any).title)}
           </span>
         </div>
       )}
 
       {/* Duration */}
-      <div className="text-xs font-mono text-white/30 shrink-0 hidden sm:block">
-        {song.durationFormatted || '0:00'}
+      <div className="text-xs font-mono text-white/40 group-hover:text-white/60 transition-colors shrink-0">
+        {song.duration || '--:--'}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(song);
-          }}
-          className={`p-1.5 rounded-full transition-colors ${
-            isFav
-              ? 'text-rose-500 hover:text-rose-400'
-              : 'text-white/20 hover:text-white/70 opacity-0 group-hover:opacity-100'
-          }`}
-          title={isFav ? 'Remove from Favorites' : 'Add to Favorites'}
-        >
-          <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500' : ''}`} />
-        </button>
-
-        {/* Quick Chord button */}
+      {/* Action Buttons */}
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Chord Shortcut */}
         {onNavigateToChord && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigateToChord(song);
-            }}
-            className="p-1.5 rounded-full text-white/20 hover:text-amber-400 transition-colors opacity-0 group-hover:opacity-100"
-            title="Lihat Chord Lagu Ini"
+            type="button"
+            onClick={() => onNavigateToChord(song)}
+            className="p-2 rounded-xl text-white/30 hover:text-amber-400 hover:bg-white/[0.08] transition-all opacity-0 group-hover:opacity-100"
+            title="Lihat Chord & Lirik"
+            aria-label="Chord & Lirik"
           >
-            <Guitar className="w-4 h-4" />
+            <Guitar className="w-3.5 h-3.5" />
           </button>
         )}
+
+        {/* Favorite */}
+        <button
+          type="button"
+          onClick={() => toggleFavorite(song)}
+          className={`p-2 rounded-xl transition-all ${
+            isFav
+              ? 'text-rose-500 hover:text-rose-400'
+              : 'text-white/25 hover:text-white/80 opacity-0 group-hover:opacity-100'
+          }`}
+          title={isFav ? 'Hapus dari Favorit' : 'Tambah ke Favorit'}
+          aria-label={isFav ? 'Hapus dari Favorit' : 'Tambah ke Favorit'}
+        >
+          <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500' : ''}`} />
+        </button>
 
         {/* More Menu */}
         <div className="relative">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className="p-1.5 rounded-full text-white/20 hover:text-white/70 transition-colors opacity-0 group-hover:opacity-100"
+            type="button"
+            onClick={() => setShowMenu((prev) => !prev)}
+            className="p-2 rounded-xl text-white/30 hover:text-white hover:bg-white/[0.08] transition-all"
+            title="Menu Opsi"
+            aria-label="Menu Opsi Lagu"
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreVertical className="w-3.5 h-3.5" />
           </button>
 
           {showMenu && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1 w-44 rounded-2xl bg-[#161824]/95 backdrop-blur-xl border border-white/10 shadow-2xl p-1.5 z-40 text-xs flex flex-col gap-1"
-            >
-              <button
-                onClick={() => {
-                  playNext(song);
-                  setShowMenu(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors text-left"
-              >
-                <Radio className="w-3.5 h-3.5 text-cyan-400" />
-                Play Next
-              </button>
-              <button
-                onClick={() => {
-                  addToQueue(song);
-                  setShowMenu(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors text-left"
-              >
-                <ListPlus className="w-3.5 h-3.5 text-cyan-400" />
-                Add to Queue
-              </button>
-              {onNavigateToChord && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-2xl glass-surface p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.6)] flex flex-col gap-0.5">
                 <button
+                  type="button"
                   onClick={() => {
-                    onNavigateToChord(song);
+                    addToQueue(song);
                     setShowMenu(false);
                   }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-amber-300 hover:bg-white/10 transition-colors text-left"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors w-full text-left"
                 >
-                  <Guitar className="w-3.5 h-3.5 text-amber-400" />
-                  Lihat Chord & Tab
+                  <ListPlus className="w-3.5 h-3.5 text-cyan-400" />
+                  Tambah ke Antrean
                 </button>
-              )}
-              <button
-                onClick={() => {
-                  toggleFavorite(song);
-                  setShowMenu(false);
-                }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors text-left"
-              >
-                <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
-                {isFav ? 'Favorited' : 'Favorite'}
-              </button>
-            </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playNext(song);
+                    setShowMenu(false);
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-white/70 hover:text-white hover:bg-white/[0.08] transition-colors w-full text-left"
+                >
+                  <Radio className="w-3.5 h-3.5 text-indigo-400" />
+                  Putar Berikutnya
+                </button>
+
+                {onNavigateToChord && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateToChord(song);
+                      setShowMenu(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-white/70 hover:text-amber-300 hover:bg-white/[0.08] transition-colors w-full text-left"
+                  >
+                    <Guitar className="w-3.5 h-3.5 text-amber-400" />
+                    Buka Chord & Lirik
+                  </button>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -31,7 +31,7 @@ export const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-3xl bg-[#10131E] border border-white/[0.1] shadow-2xl p-6 select-none"
+        className="w-full max-w-md rounded-3xl glass-modal p-6 select-none"
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">

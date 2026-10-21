@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 import type { Song } from '../../types/music.js';
 import { toSafeText } from '../../utils/text.js';
 
@@ -80,6 +81,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
   } = usePlayer();
 
   const { isFavorite, toggleFavorite } = useLibrary();
+  const { themeConfig } = useTheme();
   const [hoverProgress, setHoverProgress] = useState<number | null>(null);
 
   if (!currentTrack) return null;
@@ -100,7 +102,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
   };
 
   return (
-    <div className="hidden md:flex fixed bottom-3 left-4 right-4 z-50 h-22 rounded-3xl bg-[#090A0F]/85 backdrop-blur-3xl border border-white/[0.1] shadow-[0_12px_48px_rgba(0,0,0,0.6)] items-center px-5 gap-4 select-none">
+    <div className="hidden md:flex fixed bottom-3 left-4 right-4 z-50 h-22 rounded-3xl glass-dock items-center px-5 gap-4 select-none">
       {/* SponsorBlock Auto-Skip Toast Notification */}
       {sponsorBlockNotice && (
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-200 text-xs shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom duration-200">
@@ -270,8 +272,11 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
 
               {/* Loaded bar */}
               <div
-                className="h-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-rose-400 rounded-full"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full rounded-full transition-all duration-150"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: `linear-gradient(90deg, ${themeConfig.accentPrimary}, ${themeConfig.accentSecondary})`,
+                }}
               />
             </div>
 

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
 import { useLibrary } from '../../contexts/LibraryContext.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 import { OptimizedLyricsLine } from './OptimizedLyricsLine.js';
 import { ChordLyricsViewer } from '../chords/ChordLyricsViewer.js';
 import { toSafeText } from '../../utils/text.js';
@@ -112,6 +113,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   } = usePlayer();
 
   const { isFavorite, toggleFavorite } = useLibrary();
+  const { themeConfig } = useTheme();
   const [activeTab, setActiveTab] = useState<'artwork' | 'lyrics' | 'queue'>('artwork');
   const [showTranslation, setShowTranslation] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
@@ -585,8 +587,11 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                 ))}
 
               <div
-                className="h-full bg-gradient-to-r from-cyan-400 via-indigo-400 to-rose-400 rounded-full"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full rounded-full transition-all duration-150"
+                style={{
+                  width: `${progressPercent}%`,
+                  background: `linear-gradient(90deg, ${themeConfig.accentPrimary}, ${themeConfig.accentSecondary})`,
+                }}
               />
             </div>
             <div

@@ -69,15 +69,15 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
             setTab('favorites');
             setSelectedPlaylistId(null);
           }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
             tab === 'favorites'
-              ? 'bg-white/10 text-white border border-white/15'
-              : 'text-white/50 hover:text-white'
+              ? 'bg-white text-black shadow-lg scale-105'
+              : 'glass-pill text-white/60 hover:text-white'
           }`}
         >
-          <Heart className="w-4 h-4 text-rose-400 fill-rose-400/20" />
+          <Heart className={`w-4 h-4 ${tab === 'favorites' ? 'text-rose-500 fill-rose-500' : 'text-rose-400 fill-rose-400/20'}`} />
           <span>Favorites</span>
-          <span className="text-[11px] font-mono text-white/30">({favorites.length})</span>
+          <span className={`text-[11px] font-mono ${tab === 'favorites' ? 'text-black/60' : 'text-white/30'}`}>({favorites.length})</span>
         </button>
 
         <button
@@ -85,28 +85,28 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
             setTab('history');
             setSelectedPlaylistId(null);
           }}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
             tab === 'history'
-              ? 'bg-white/10 text-white border border-white/15'
-              : 'text-white/50 hover:text-white'
+              ? 'bg-white text-black shadow-lg scale-105'
+              : 'glass-pill text-white/60 hover:text-white'
           }`}
         >
-          <History className="w-4 h-4 text-amber-400" />
+          <History className={`w-4 h-4 ${tab === 'history' ? 'text-amber-500' : 'text-amber-400'}`} />
           <span>History</span>
-          <span className="text-[11px] font-mono text-white/30">({history.length})</span>
+          <span className={`text-[11px] font-mono ${tab === 'history' ? 'text-black/60' : 'text-white/30'}`}>({history.length})</span>
         </button>
 
         <button
           onClick={() => setTab('playlists')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs md:text-sm font-semibold transition-all ${
             tab === 'playlists'
-              ? 'bg-white/10 text-white border border-white/15'
-              : 'text-white/50 hover:text-white'
+              ? 'bg-white text-black shadow-lg scale-105'
+              : 'glass-pill text-white/60 hover:text-white'
           }`}
         >
-          <ListMusic className="w-4 h-4 text-cyan-400" />
+          <ListMusic className={`w-4 h-4 ${tab === 'playlists' ? 'text-cyan-600' : 'text-cyan-400'}`} />
           <span>Playlists</span>
-          <span className="text-[11px] font-mono text-white/30">({playlists.length})</span>
+          <span className={`text-[11px] font-mono ${tab === 'playlists' ? 'text-black/60' : 'text-white/30'}`}>({playlists.length})</span>
         </button>
       </div>
 

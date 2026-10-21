@@ -4,52 +4,172 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0.75rem);
   }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0.75rem);
+  }
 }
 
-/* Theme CSS Custom Properties */
+/* Theme Design Tokens & Liquid Glass Properties */
 :root, [data-theme="cyber"] {
   --bg-main: #090A0F;
-  --bg-surface: rgba(13, 15, 24, 0.75);
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  --bg-surface: rgba(13, 15, 24, 0.78);
+  --border-subtle: rgba(255, 255, 255, 0.09);
   --accent-primary: #06b6d4;
   --accent-secondary: #6366f1;
-  --accent-glow: rgba(6, 182, 212, 0.15);
+  --accent-glow: rgba(6, 182, 212, 0.18);
+  --glass-surface: rgba(15, 18, 28, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-blur: 24px;
+  --glass-card: rgba(255, 255, 255, 0.035);
+  --glass-card-hover: rgba(255, 255, 255, 0.075);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="obsidian"] {
   --bg-main: #000000;
-  --bg-surface: rgba(10, 10, 12, 0.9);
+  --bg-surface: rgba(10, 10, 14, 0.92);
   --border-subtle: rgba(255, 255, 255, 0.12);
   --accent-primary: #a855f7;
   --accent-secondary: #3b82f6;
-  --accent-glow: rgba(168, 85, 247, 0.15);
+  --accent-glow: rgba(168, 85, 247, 0.20);
+  --glass-surface: rgba(14, 12, 18, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-blur: 26px;
+  --glass-card: rgba(255, 255, 255, 0.04);
+  --glass-card-hover: rgba(255, 255, 255, 0.09);
+  --glass-shadow: 0 12px 48px rgba(0, 0, 0, 0.65);
 }
 
 [data-theme="emerald"] {
   --bg-main: #040E0A;
   --bg-surface: rgba(6, 20, 15, 0.85);
-  --border-subtle: rgba(16, 185, 129, 0.14);
+  --border-subtle: rgba(16, 185, 129, 0.15);
   --accent-primary: #10b981;
   --accent-secondary: #14b8a6;
-  --accent-glow: rgba(16, 185, 129, 0.15);
+  --accent-glow: rgba(16, 185, 129, 0.20);
+  --glass-surface: rgba(8, 24, 18, 0.78);
+  --glass-border: rgba(16, 185, 129, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.20);
+  --glass-blur: 24px;
+  --glass-card: rgba(16, 185, 129, 0.04);
+  --glass-card-hover: rgba(16, 185, 129, 0.08);
+  --glass-shadow: 0 12px 40px rgba(2, 20, 12, 0.55);
 }
 
 [data-theme="sunset"] {
   --bg-main: #0D0614;
   --bg-surface: rgba(22, 10, 32, 0.85);
-  --border-subtle: rgba(244, 63, 94, 0.14);
+  --border-subtle: rgba(244, 63, 94, 0.15);
   --accent-primary: #f43f5e;
   --accent-secondary: #f97316;
-  --accent-glow: rgba(244, 63, 94, 0.15);
+  --accent-glow: rgba(244, 63, 94, 0.20);
+  --glass-surface: rgba(26, 12, 36, 0.80);
+  --glass-border: rgba(244, 63, 94, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.20);
+  --glass-blur: 24px;
+  --glass-card: rgba(244, 63, 94, 0.04);
+  --glass-card-hover: rgba(244, 63, 94, 0.08);
+  --glass-shadow: 0 12px 44px rgba(20, 4, 28, 0.55);
 }
 
 [data-theme="titanium"] {
   --bg-main: #0B1120;
   --bg-surface: rgba(15, 23, 42, 0.85);
-  --border-subtle: rgba(56, 189, 248, 0.14);
+  --border-subtle: rgba(56, 189, 248, 0.15);
   --accent-primary: #38bdf8;
   --accent-secondary: #818cf8;
-  --accent-glow: rgba(56, 189, 248, 0.15);
+  --accent-glow: rgba(56, 189, 248, 0.20);
+  --glass-surface: rgba(16, 27, 48, 0.80);
+  --glass-border: rgba(56, 189, 248, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.20);
+  --glass-blur: 24px;
+  --glass-card: rgba(56, 189, 248, 0.04);
+  --glass-card-hover: rgba(56, 189, 248, 0.08);
+  --glass-shadow: 0 12px 42px rgba(6, 12, 28, 0.55);
+}
+
+/* Liquid Glass Primitives & Utilities */
+.glass-surface {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--glass-shadow);
+}
+
+.glass-dock {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.glass-card {
+  background: var(--glass-card);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: var(--glass-card-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: all 0.2s ease;
+}
+
+.glass-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--accent-primary);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 0 3px var(--accent-glow);
+}
+
+.glass-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 24px 64px rgba(0, 0, 0, 0.7);
 }
 
 /* Custom minimal scrollbar */
@@ -63,12 +183,22 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Accessibility & Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Global body resets */

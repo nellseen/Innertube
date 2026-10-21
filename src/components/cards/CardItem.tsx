@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 import type { Album, Artist, Playlist, Song } from '../../types/music.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 import { toSafeText } from '../../utils/text.js';
 
 interface CardItemProps {
@@ -11,6 +12,8 @@ interface CardItemProps {
 }
 
 export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay }) => {
+  const { themeConfig } = useTheme();
+
   const isArtist =
     type === 'artist' ||
     ('name' in item && !('title' in item)) ||
@@ -38,12 +41,20 @@ export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay 
   return (
     <div
       onClick={onClick}
-      className="group relative flex flex-col p-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.04] hover:border-white/[0.1] transition-all duration-300 cursor-pointer select-none"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group relative flex flex-col p-3 rounded-2xl glass-card cursor-pointer select-none"
     >
       {/* Artwork container */}
       <div
         className={`relative w-full aspect-square overflow-hidden mb-3 bg-white/5 shadow-md ${
-          isArtist ? 'rounded-full' : 'rounded-xl'
+          isArtist ? 'rounded-full' : 'rounded-2xl'
         }`}
       >
         <img
@@ -53,17 +64,23 @@ export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
-        {/* Hover play button */}
+        {/* Hover play button with theme gradient */}
         {onPlay && (
           <button
+            type="button"
+            aria-label={`Play ${title}`}
             onClick={(e) => {
               e.stopPropagation();
               onPlay();
             }}
-            className="absolute bottom-2 right-2 w-10 h-10 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black shadow-lg flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="absolute bottom-2.5 right-2.5 w-10 h-10 rounded-full text-black shadow-xl flex items-center justify-center opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95"
+            style={{ backgroundColor: '#ffffff' }}
             title="Play"
           >
-            <Play className="w-5 h-5 fill-current ml-0.5" />
+            <Play
+              className="w-4 h-4 fill-current ml-0.5"
+              style={{ color: '#000000' }}
+            />
           </button>
         )}
       </div>
