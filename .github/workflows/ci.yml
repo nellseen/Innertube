@@ -23,23 +23,33 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Step 1 — Static Type Check & Linting
         run: npm run lint
 
-      - name: Step 2 — Unit, Integration & E2E Test Suite
-        run: npm test
+      - name: Step 2 — Unit & Integration Tests
+        run: npm run test:unit && npm run test:integration
 
       - name: Step 3 — Production Applet Build
         run: npm run build
 
-      - name: Step 4 — Performance Benchmark & Load Verification
+      - name: Step 4 — Start Server in Background for E2E & Load Verification
+        run: |
+          node server.ts &
+          for i in {1..30}; do
+            curl -s http://127.0.0.1:3000/api/health && break || sleep 1
+          done
+
+      - name: Step 5 — E2E Workflow Test
+        run: npm test tests/e2e
+
+      - name: Step 6 — Performance Benchmark & Load Verification
         run: npm run test:load
         env:
           TARGET_URL: 'http://127.0.0.1:3000/api/health'
         continue-on-error: true
 
-      - name: Step 5 — Verify CI Gates
+      - name: Step 7 — Verify CI Gates
         run: |
           echo "✅ All CI/CD pipeline quality gates passed successfully."
