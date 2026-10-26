@@ -13,6 +13,7 @@ import chordRoute from './server/routes/chord.js';
 import { innertubeService } from './server/innertube.js';
 import { appCache } from './server/cache.js';
 import { deepSanitizeResponse } from './server/sanitizer.js';
+import { createRateLimiter } from './server/rate-limit.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,18 +22,37 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// Only trust explicitly configured proxy hops. Without this, clients cannot
+// spoof their rate-limit identity through X-Forwarded-For.
+const proxyHops = process.env.TRUST_PROXY_HOPS;
+if (proxyHops && /^\d+$/.test(proxyHops)) {
+  app.set('trust proxy', Number(proxyHops));
+}
+
+const allowedOrigins = (process.env.CORS_ORIGINS || '*')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 // CORS configuration (Security Section 38)
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or same-origin)
-      callback(null, true);
+      // The API is public; wildcard CORS is safe here because credentials are
+      // disabled. Deployments can restrict browser origins with CORS_ORIGINS.
+      callback(null, !origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin));
     },
-    credentials: true,
+    credentials: false,
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: '32kb' }));
+
+// Bound request volume globally and more tightly on routes that make costly
+// upstream requests. The limiter uses req.ip and a bounded in-memory map.
+app.use('/api', createRateLimiter({ windowMs: 60_000, maxRequests: 120 }));
+app.use('/api/search', createRateLimiter({ windowMs: 60_000, maxRequests: 30 }));
+app.use('/api/chord', createRateLimiter({ windowMs: 60_000, maxRequests: 10 }));
 
 // Universal JSON response sanitizer middleware (prevents any { rtl: ... } from leaking)
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -105,13 +125,18 @@ async function startServer() {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 
-  // Guard against unhandled rejections or player decipher errors from crashing the server
-  process.on('unhandledRejection', (reason: any) => {
-    console.warn('[WARN] Process unhandledRejection (non-fatal):', reason?.message || reason);
-  });
-  process.on('uncaughtException', (err: any) => {
-    console.error('[WARN] Process uncaughtException (non-fatal):', err?.message || err);
-  });
+  // Fatal asynchronous/process errors leave server state uncertain; exit so a
+  // process manager can restart a clean instance.
+  const fatalError = (label: string, err: any) => {
+    console.error(`[FATAL] ${label}; shutting down so the process manager can restart safely:`, err?.stack || err);
+    appCache.destroy();
+    server.close(() => process.exit(1));
+    // Do not wait forever for stuck connections after a fatal process error.
+    setTimeout(() => process.exit(1), 5_000).unref();
+  };
+
+  process.on('unhandledRejection', (reason: any) => fatalError('Unhandled rejection', reason));
+  process.on('uncaughtException', (err: any) => fatalError('Uncaught exception', err));
 }
 
 startServer().catch((err) => {

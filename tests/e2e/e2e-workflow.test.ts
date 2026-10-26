@@ -40,10 +40,13 @@ describe('E2E Full Application Workflow Test', () => {
     });
   });
 
-  it('Scenario 3: Search endpoint handles empty query or parameters without crashing', async () => {
-    const res = await fetchJson('/api/search?q=test');
-    expect(res).toBeDefined();
-    expect(res.success).toBe(true);
+  it('Scenario 3: Search endpoint rejects an empty query without calling upstream', async () => {
+    const res = await fetchJson('/api/search');
+    expect(res).toMatchObject({
+      success: false,
+      code: 'INVALID_REQUEST',
+      retryable: false,
+    });
   });
 
   it('Scenario 4: Built-in Chord API returns valid chords for popular songs', async () => {

@@ -36,10 +36,20 @@ jobs:
 
       - name: Step 4 — Start Server in Background for E2E & Load Verification
         run: |
-          node server.ts &
+          npm run start > /tmp/aetheria-server.log 2>&1 &
+          SERVER_PID=$!
           for i in {1..30}; do
-            curl -s http://127.0.0.1:3000/api/health && break || sleep 1
+            if curl --fail --silent http://127.0.0.1:3000/api/health; then
+              exit 0
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              cat /tmp/aetheria-server.log
+              exit 1
+            fi
+            sleep 1
           done
+          cat /tmp/aetheria-server.log
+          exit 1
 
       - name: Step 5 — E2E Workflow Test
         run: npm test tests/e2e

@@ -321,10 +321,19 @@ function generateAlgorithmicChords(
 
 // GET /api/chord - Search or retrieve chord sheet for any song
 router.get('/chord', async (req: Request, res: Response) => {
+  const params = ['q', 'videoId', 'title', 'artist'] as const;
+  if (params.some((key) => req.query[key] !== undefined && typeof req.query[key] !== 'string')) {
+    return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Chord parameters must be single strings', retryable: false });
+  }
   const query = (req.query.q as string || '').trim();
   const videoId = (req.query.videoId as string || '').trim();
   const reqTitle = (req.query.title as string || '').trim();
   const reqArtist = (req.query.artist as string || '').trim();
+
+  if (query.length > 200 || reqTitle.length > 200 || reqArtist.length > 200 ||
+      (videoId && !/^[a-zA-Z0-9_-]{11}$/.test(videoId))) {
+    return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Chord input is invalid or too long', retryable: false });
+  }
 
   if (!query && !videoId && !reqTitle) {
     return res.status(400).json({
@@ -334,10 +343,28 @@ router.get('/chord', async (req: Request, res: Response) => {
     });
   }
 
-  const cacheKey = `chord_full_${videoId || ''}_${query.toLowerCase()}_${reqTitle.toLowerCase()}`;
+  const cacheKey = `chord_full_${videoId}_${query.toLowerCase()}_${reqTitle.toLowerCase()}_${reqArtist.toLowerCase()}`;
   const cached = appCache.get<any>(cacheKey);
   if (cached) {
     return res.json({ success: true, ...cached });
+  }
+
+  // Serve known curated songs before contacting YouTube. Besides being faster,
+  // this keeps offline and deterministic chord results independent of upstream.
+  const inputTitle = reqTitle || query;
+  const inputArtist = reqArtist || 'Unknown Artist';
+  const inputKey = `${inputTitle} ${inputArtist}`.toLowerCase();
+  for (const [key, preset] of Object.entries(CURATED_CHORD_DATABASE)) {
+    if (inputKey.includes(key)) {
+      const responseData = {
+        song: { id: videoId || undefined, title: inputTitle, artist: inputArtist, thumbnail: '' },
+        originalKey: preset.originalKey,
+        content: preset.content,
+        source: 'curated',
+      };
+      appCache.set(cacheKey, responseData, 24 * 60 * 60 * 1000);
+      return res.json({ success: true, ...responseData });
+    }
   }
 
   try {

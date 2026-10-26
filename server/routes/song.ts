@@ -6,7 +6,7 @@ const router = Router();
 
 // Validate alphanumeric / dash / underscore YouTube ID
 function isValidVideoId(id: string): boolean {
-  return /^[a-zA-Z0-9_-]{10,14}$/.test(id);
+  return /^[a-zA-Z0-9_-]{11}$/.test(id);
 }
 
 // GET /api/song/:videoId

@@ -9,8 +9,18 @@ async function handleSearch(
   res: Response,
   filter?: string
 ) {
-  const query = (req.query.q as string || '').trim();
-  const continuation = req.query.continuation as string | undefined;
+  const rawQuery = req.query.q;
+  const rawContinuation = req.query.continuation;
+  if ((rawQuery !== undefined && typeof rawQuery !== 'string') ||
+      (rawContinuation !== undefined && typeof rawContinuation !== 'string')) {
+    return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Query parameters must be single strings', retryable: false });
+  }
+  const query = (rawQuery || '').trim();
+  const continuation = rawContinuation as string | undefined;
+
+  if (query.length > 200 || (continuation?.length || 0) > 16_000) {
+    return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Search query or continuation is too long', retryable: false });
+  }
 
   if (!query && !continuation) {
     return res.status(400).json({

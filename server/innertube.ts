@@ -26,6 +26,17 @@ let innertubeInstance: Innertube | null = null;
 let isInitializing = false;
 let initPromise: Promise<Innertube> | null = null;
 
+// Give each upstream HTTP request a finite lifetime. Carry through any signal
+// already attached by youtubei.js and add a 12-second network timeout.
+const innertubeFetch: typeof fetch = (input, init = {}) => {
+  const signals = [
+    input instanceof Request ? input.signal : undefined,
+    init.signal,
+    AbortSignal.timeout(12_000),
+  ].filter((signal): signal is AbortSignal => signal !== undefined);
+  return fetch(input, { ...init, signal: AbortSignal.any(signals) });
+};
+
 // Helper: parse duration string "3:45" or "1:23:45" to seconds
 function parseDuration(durationStr?: string | number): number {
   if (typeof durationStr === 'number') return durationStr;
@@ -299,6 +310,7 @@ export class InnertubeService {
           const yt = await Innertube.create({
             cache: new UniversalCache(true),
             generate_session_locally: true,
+            fetch: innertubeFetch,
           });
 
           this.yt = yt;
