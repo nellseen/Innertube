@@ -100,6 +100,9 @@ export interface CustomPlaylist {
   id: string;
   name: string;
   description?: string;
+  thumbnail?: string;
+  sourceId?: string;
+  sourceUrl?: string;
   tracks: Song[];
   createdAt: number;
 }

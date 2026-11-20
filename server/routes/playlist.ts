@@ -4,6 +4,32 @@ import { appCache } from '../cache.js';
 
 const router = Router();
 
+// GET /api/playlist/:playlistId/import (complete public playlist)
+router.get('/playlist/:playlistId/import', async (req: Request, res: Response) => {
+  const { playlistId } = req.params;
+  if (!playlistId || !/^[A-Za-z0-9_-]{10,}$/.test(playlistId)) {
+    return res.status(400).json({
+      success: false,
+      code: 'INVALID_REQUEST',
+      error: 'Invalid playlist ID',
+      retryable: false,
+    });
+  }
+
+  try {
+    const data = await innertubeService.importPlaylist(playlistId);
+    return res.json({ success: true, ...data });
+  } catch (err: any) {
+    console.error(`[ERROR] /api/playlist/${playlistId}/import failed:`, err?.message || err);
+    return res.status(404).json({
+      success: false,
+      code: 'CONTENT_UNAVAILABLE',
+      error: 'Playlist could not be imported. It may be private or unavailable.',
+      retryable: false,
+    });
+  }
+});
+
 // GET /api/playlist/:playlistId
 router.get('/playlist/:playlistId', async (req: Request, res: Response) => {
   const { playlistId } = req.params;

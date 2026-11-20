@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Heart, History, ListMusic, PlusCircle, Play, Trash2 } from 'lucide-react';
+import { Download, Heart, History, ListMusic, PlusCircle, Play, Trash2 } from 'lucide-react';
 import type { NavigationPage, Song } from '../types/music.js';
 import { useLibrary } from '../contexts/LibraryContext.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
 import { SongRow } from '../components/cards/SongRow.js';
+import { ImportPlaylistModal } from '../components/modals/ImportPlaylistModal.js';
 
 interface LibraryPageProps {
   initialTab?: 'favorites' | 'history' | 'playlists';
@@ -18,6 +19,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
 }) => {
   const [tab, setTab] = useState<'favorites' | 'history' | 'playlists'>(initialTab);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const {
     favorites,
@@ -41,7 +43,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-32 custom-scrollbar">
       {/* Title */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
             My Library
@@ -52,13 +54,24 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
         </div>
 
         {tab === 'playlists' && (
-          <button
-            onClick={onCreatePlaylist}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white text-black font-semibold text-xs hover:scale-105 active:scale-95 transition-all shadow-md"
-          >
-            <PlusCircle className="w-4 h-4" />
-            New Playlist
-          </button>
+          <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/10 px-3 py-2 text-xs font-medium sm:flex-none text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white"
+            >
+              <Download className="h-4 w-4" />
+              Import from YouTube
+            </button>
+            <button
+              type="button"
+              onClick={onCreatePlaylist}
+              className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white px-3 py-2 text-xs font-semibold sm:flex-none text-black transition-colors hover:bg-white/90"
+            >
+              <PlusCircle className="h-4 w-4" />
+              New playlist
+            </button>
+          </div>
         )}
       </div>
 
@@ -282,15 +295,19 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                   onClick={() => setSelectedPlaylistId(pl.id)}
                   className="group p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer select-none flex flex-col justify-between aspect-square"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400 mb-2">
-                    <ListMusic className="w-6 h-6" />
+                  <div className="mb-2 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5 text-[var(--accent-primary)]">
+                    {pl.thumbnail ? (
+                      <img src={pl.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <ListMusic className="h-6 w-6" />
+                    )}
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
                       {pl.name}
                     </h3>
-                    <p className="text-xs text-white/40 mt-0.5">
-                      {pl.tracks.length} tracks
+                    <p className="mt-0.5 text-xs text-white/40">
+                      {pl.tracks.length} tracks{pl.sourceId ? ' · Imported' : ''}
                     </p>
                   </div>
                 </div>
@@ -308,6 +325,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           )}
         </section>
       )}
+      <ImportPlaylistModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
     </div>
   );
 };

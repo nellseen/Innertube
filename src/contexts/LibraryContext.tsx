@@ -11,6 +11,7 @@ interface LibraryContextType {
   addToHistory: (song: Song) => void;
   clearHistory: () => void;
   createPlaylist: (name: string, description?: string) => string;
+  importPlaylist: (playlist: { sourceId: string; sourceUrl: string; name: string; description?: string; thumbnail?: string; tracks: Song[] }) => string;
   deletePlaylist: (playlistId: string) => void;
   addToPlaylist: (playlistId: string, song: Song) => void;
   removeFromPlaylist: (playlistId: string, songId: string) => void;
@@ -157,6 +158,31 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return id;
   };
 
+  const importPlaylist: LibraryContextType['importPlaylist'] = (playlist) => {
+    const existing = playlists.find((item) => item.sourceId === playlist.sourceId);
+    const id = existing?.id || `import_${Date.now()}`;
+    const imported: CustomPlaylist = {
+      id,
+      name: playlist.name,
+      description: playlist.description,
+      thumbnail: playlist.thumbnail,
+      sourceId: playlist.sourceId,
+      sourceUrl: playlist.sourceUrl,
+      tracks: playlist.tracks.map(sanitizeSong),
+      createdAt: existing?.createdAt || Date.now(),
+    };
+    const nextPlaylists = existing
+      ? playlists.map((item) => item.id === existing.id ? imported : item)
+      : [imported, ...playlists];
+    try {
+      localStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(nextPlaylists));
+    } catch {
+      throw new Error('This browser is out of storage space for the complete playlist. Free some storage and retry.');
+    }
+    setPlaylists(nextPlaylists);
+    return id;
+  };
+
   const deletePlaylist = (playlistId: string) => {
     setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
   };
@@ -195,6 +221,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addToHistory,
         clearHistory,
         createPlaylist,
+        importPlaylist,
         deletePlaylist,
         addToPlaylist,
         removeFromPlaylist,

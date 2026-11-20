@@ -1629,6 +1629,60 @@ export class InnertubeService {
     return { album, tracks };
   }
 
+  // Import the complete public playlist by following youtubei.js continuation
+  // pages. Metadata lives on the parsed header rather than the playlist root.
+  async importPlaylist(playlistId: string): Promise<{
+    playlist: PlaylistItem;
+    tracks: SongItem[];
+  }> {
+    const yt = await this.getClient();
+    console.log(`[INNERTUBE] Importing complete playlist ${playlistId}`);
+    let current: any = await yt.music.getPlaylist(playlistId);
+    const firstPage: any = current;
+    const tracks: SongItem[] = [];
+    const seenPages = new Set<string>();
+
+    while (current) {
+      const contents = current.contents || current.items || [];
+      const signature = Array.from(contents as any[])
+        .map((item: any) => String(item?.id || item?.video_id || item?.title || ''))
+        .join('|');
+      if (seenPages.has(signature)) {
+        throw new Error('Playlist pagination repeated a page; import stopped to avoid looping.');
+      }
+      seenPages.add(signature);
+
+      for (const item of contents) {
+        const song = normalizeSong(item);
+        if (song) tracks.push(song);
+      }
+
+      if (!current.has_continuation) break;
+      current = await current.getContinuation();
+    }
+
+    const parsedHeader = firstPage.header?.header || firstPage.header || {};
+    const title = toSafeString(parsedHeader.title || firstPage.title, 'Playlist');
+    const author = toSafeString(parsedHeader.author?.name || parsedHeader.author || firstPage.author, 'YouTube Music');
+    let thumbnail = getBestThumbnail(parsedHeader.thumbnails || firstPage.thumbnails || firstPage.thumbnail);
+    if (thumbnail.includes('images.unsplash.com/photo-1511671782779-c97d3d27a1d4')) {
+      thumbnail = tracks.find((track) => track.thumbnail && !track.thumbnail.includes('images.unsplash.com'))?.thumbnail || '';
+    }
+    const description = toSafeString(parsedHeader.description || firstPage.description);
+
+    return {
+      playlist: {
+        id: playlistId,
+        title,
+        author,
+        thumbnail,
+        trackCount: tracks.length,
+        description: description || undefined,
+      },
+      tracks,
+    };
+  }
+
   // --- PLAYLIST ---
   async getPlaylist(
     playlistId: string,

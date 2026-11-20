@@ -205,6 +205,14 @@ export const api = {
   },
 
   // Playlist
+  async importPlaylist(playlistId: string): Promise<{
+    success: boolean;
+    playlist: Playlist;
+    tracks: Song[];
+  }> {
+    return request(`/playlist/${encodeURIComponent(playlistId)}/import`);
+  },
+
   async getPlaylist(
     playlistId: string,
     continuation?: string
