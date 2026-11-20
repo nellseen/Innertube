@@ -22,10 +22,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
   ];
 
   return (
-    <div className="md:hidden fixed bottom-2 left-3 right-3 z-40 pb-safe pointer-events-none flex justify-center">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pb-safe pointer-events-none">
       <nav
-        aria-label="Mobile Navigation Dock"
-        className="glass-dock pointer-events-auto w-full max-w-md h-16 rounded-3xl px-2 flex items-center justify-around select-none shadow-[0_12px_36px_rgba(0,0,0,0.65)]"
+        aria-label="Mobile navigation"
+        className="glass-dock pointer-events-auto flex h-16 w-full items-center border-x-0 border-b-0 border-t border-[var(--border-subtle)] rounded-none px-1 shadow-none"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -36,6 +36,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
               key={tab.name}
               type="button"
               aria-label={tab.label}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => {
                 if (tab.name === 'chords') {
                   onNavigate({ name: 'chords', song: currentTrack || undefined });
@@ -43,37 +44,22 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentPage, onNavigate })
                   onNavigate({ name: tab.name as any });
                 }
               }}
-              className={`relative flex flex-col items-center justify-center min-w-[56px] h-12 rounded-2xl transition-all duration-200 active:scale-95 ${
-                isActive
-                  ? 'text-white'
-                  : 'text-white/45 hover:text-white/80'
+              className={`relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors ${
+                isActive ? 'text-white' : 'text-white/45 hover:text-white/80'
               }`}
             >
-              {/* Active Liquid Glass Pill Indicator */}
               {isActive && (
-                <div
-                  className="absolute inset-0 rounded-2xl bg-white/[0.1] border border-white/[0.18] shadow-inner transition-all duration-300"
-                  style={{
-                    boxShadow: `0 0 16px ${themeConfig.accentGlow || 'rgba(6, 182, 212, 0.2)'}`,
-                  }}
+                <span
+                  aria-hidden="true"
+                  className="absolute top-0 h-0.5 w-7 rounded-full"
+                  style={{ backgroundColor: themeConfig.accentPrimary }}
                 />
               )}
-
               <Icon
-                className={`w-5 h-5 relative z-10 transition-transform duration-200 ${
-                  isActive ? 'scale-110' : ''
-                }`}
-                style={{
-                  color: isActive ? themeConfig.accentPrimary : undefined,
-                }}
+                className="h-5 w-5"
+                style={{ color: isActive ? themeConfig.accentPrimary : undefined }}
               />
-              <span
-                className={`text-[10px] font-medium tracking-tight mt-0.5 relative z-10 transition-colors ${
-                  isActive ? 'font-semibold text-white' : 'text-white/50'
-                }`}
-              >
-                {tab.label}
-              </span>
+              <span className="text-[10px] font-medium leading-none">{tab.label}</span>
             </button>
           );
         })}

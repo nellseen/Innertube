@@ -46,47 +46,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-64 h-full hidden md:flex flex-col shrink-0 p-3.5 select-none">
-      {/* Liquid Glass container */}
-      <div className="flex-1 flex flex-col rounded-3xl glass-surface overflow-hidden p-4">
+    <aside className="relative z-10 w-60 h-full hidden md:flex flex-col shrink-0 select-none">
+      {/* Appearance container */}
+      <div className="flex-1 flex flex-col bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] overflow-hidden px-4 py-5">
         {/* Brand Header */}
-        <div
+        <button
+          type="button"
           onClick={onOpenAbout}
-          role="button"
-          tabIndex={0}
-          className="flex items-center gap-3 px-2 py-3 mb-2 cursor-pointer group rounded-2xl hover:bg-white/[0.04] transition-colors"
-          title="Lihat Profil Aetheria"
+          aria-label="About Aetheria"
+          className="w-full text-left flex items-center gap-3 px-2 py-3 mb-2 cursor-pointer group rounded-xl hover:bg-white/[0.04] transition-colors"
+          title="About Aetheria"
         >
-          <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-rose-500 p-[1.5px] shadow-lg shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
-            <div className="w-full h-full bg-[#0D0F18] rounded-[14px] flex items-center justify-center overflow-hidden">
+          <div className="relative w-9 h-9 rounded-xl bg-white/5 border border-white/10 shrink-0 overflow-hidden">
+            <div className="w-full h-full bg-[var(--bg-surface)] rounded-[11px] flex items-center justify-center overflow-hidden">
               <img
                 src="/logo.webp"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = 'https://files.catbox.moe/91lpa1.webp';
                 }}
                 alt="Aetheria"
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                className="w-full h-full object-cover transition-transform duration-300"
               />
             </div>
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-white via-white/95 to-white/70 bg-clip-text text-transparent group-hover:text-cyan-300 transition-colors">
+            <h1 className="text-base font-semibold tracking-tight text-white">
               Aetheria
             </h1>
             <p className="text-[10px] text-white/45 uppercase tracking-widest font-mono">
-              Liquid Glass
+              Music player
             </p>
           </div>
-        </div>
+        </button>
 
         {/* Primary Navigation */}
         <nav className="flex flex-col gap-1 mb-5" aria-label="Main Navigation">
           <button
             type="button"
             onClick={() => onNavigate({ name: 'home' })}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
               isCurrent('home')
-                ? 'bg-white/12 text-white border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+                ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                 : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -100,9 +100,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => onNavigate({ name: 'trending' })}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
               isCurrent('trending')
-                ? 'bg-white/12 text-white border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+                ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                 : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -116,9 +116,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => onNavigate({ name: 'search' })}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
               isCurrent('search')
-                ? 'bg-white/12 text-white border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+                ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                 : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -132,9 +132,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => onNavigate({ name: 'scene' })}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
               isCurrent('scene')
-                ? 'bg-white/12 text-white border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+                ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                 : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -148,9 +148,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={() => onNavigate({ name: 'chords', song: currentTrack || undefined })}
-            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
               isCurrent('chords')
-                ? 'bg-white/12 text-white border border-white/20 shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+                ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                 : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
             }`}
           >
@@ -183,9 +183,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => onNavigate({ name: 'library', tab: 'favorites' })}
-              className={`flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-medium transition-all ${
+              className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                 isCurrent('library', 'favorites')
-                  ? 'bg-white/12 text-white border border-white/15'
+                  ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                   : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
@@ -199,9 +199,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => onNavigate({ name: 'library', tab: 'history' })}
-              className={`flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-medium transition-all ${
+              className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                 isCurrent('library', 'history')
-                  ? 'bg-white/12 text-white border border-white/15'
+                  ? 'bg-white/[0.06] text-white border-l-2 border-[var(--accent-primary)]'
                   : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
               }`}
             >
@@ -221,9 +221,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={onCreatePlaylist}
-                  className="mt-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                  className="mt-2 text-xs font-semibold text-[var(--accent-primary)] hover:text-white transition-colors"
                 >
-                  + Buat Playlist
+                  + Create playlist
                 </button>
               </div>
             ) : (
@@ -242,20 +242,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Theme & About Nell Footer */}
+        {/* Preferences and information */}
         <div className="mt-3 pt-3 border-t border-white/[0.08] flex flex-col gap-2">
           {onOpenTheme && (
             <button
               type="button"
               onClick={onOpenTheme}
-              className="flex items-center justify-between px-3 py-2 rounded-2xl glass-pill text-white/70 hover:text-white text-xs font-medium transition-all group"
+              className="flex items-center justify-between px-3 py-2 rounded-lg glass-pill text-white/70 hover:text-white text-xs font-medium transition-colors group"
             >
               <div className="flex items-center gap-2">
                 <Palette
                   className="w-3.5 h-3.5 transition-transform group-hover:rotate-12"
                   style={{ color: themeConfig.accentPrimary }}
                 />
-                <span>Tema Liquid Glass</span>
+                <span>Theme</span>
               </div>
               <span className="flex items-center gap-1.5 text-[10px] text-white/50">
                 <span
@@ -271,23 +271,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={onOpenAbout}
-              className="flex items-center justify-between px-3 py-2 rounded-2xl glass-pill text-white/60 hover:text-white text-xs font-medium transition-all group"
+              className="flex items-center justify-between px-3 py-2 rounded-lg glass-pill text-white/60 hover:text-white text-xs font-medium transition-colors group"
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
-                <span>About Nell</span>
+                <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)] transition-transform" />
+                <span>About Aetheria</span>
               </div>
-              <span className="text-[10px] text-cyan-400 font-mono">@nellseen</span>
+              <span className="text-[10px] text-white/40">@nellseen</span>
             </button>
           )}
-
-          <div className="flex items-center justify-between px-2 text-[10px] text-white/35 font-mono">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Innertube Lossless
-            </span>
-            <span>v18 Engine</span>
-          </div>
         </div>
       </div>
     </aside>

@@ -586,6 +586,24 @@ export class InnertubeService {
             item.id || item.video_id || item.videoId || item.endpoint?.payload?.videoId || ''
           );
 
+          // YouTube Music Explore returns mood/genre chips as navigation buttons,
+          // not playlists. Keep their label and params so they are never shown as
+          // duplicate "Unknown Playlist" entries.
+          const browseEndpoint = item.endpoint?.payload || item.endpoint?.browseEndpoint || {};
+          if (type === 'musicnavigationbutton' || item.button_text) {
+            const label = toSafeString(item.button_text || item.title);
+            if (label) {
+              items.push({
+                id: `mood:${browseEndpoint.browseId || rawId}:${browseEndpoint.params || ''}`,
+                title: label,
+                author: 'Mood & genre',
+                thumbnail: '',
+                description: 'Explore music in this mood',
+              });
+            }
+            continue;
+          }
+
           if (
             type.includes('playlist') ||
             rawId.startsWith('VL') ||

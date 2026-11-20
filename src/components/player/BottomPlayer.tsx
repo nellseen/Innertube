@@ -102,7 +102,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
   };
 
   return (
-    <div className="hidden md:flex fixed bottom-3 left-4 right-4 z-50 h-22 rounded-3xl glass-dock items-center px-5 gap-4 select-none">
+    <div className="hidden md:flex fixed bottom-0 left-0 right-0 z-50 h-20 rounded-none glass-dock items-center px-6 gap-4 select-none border-x-0 border-b-0 border-t border-[var(--border-subtle)] shadow-none">
       {/* SponsorBlock Auto-Skip Toast Notification */}
       {sponsorBlockNotice && (
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-200 text-xs shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom duration-200">
@@ -188,7 +188,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
           <button
             onClick={toggleShuffle}
             className={`p-2 rounded-full transition-colors ${
-              isShuffle ? 'text-cyan-400' : 'text-white/40 hover:text-white/80'
+              isShuffle ? 'text-[var(--accent-primary)]' : 'text-white/40 hover:text-white/80'
             }`}
             title={`Shuffle: ${isShuffle ? 'On' : 'Off'}`}
           >
@@ -229,7 +229,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
           <button
             onClick={cycleRepeat}
             className={`p-2 rounded-full transition-colors ${
-              repeatMode !== 'off' ? 'text-cyan-400' : 'text-white/40 hover:text-white/80'
+              repeatMode !== 'off' ? 'text-[var(--accent-primary)]' : 'text-white/40 hover:text-white/80'
             }`}
             title={`Repeat: ${repeatMode}`}
           >
@@ -275,7 +275,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
                 className="h-full rounded-full transition-all duration-150"
                 style={{
                   width: `${progressPercent}%`,
-                  background: `linear-gradient(90deg, ${themeConfig.accentPrimary}, ${themeConfig.accentSecondary})`,
+                  background: `linear-gradient(90deg, ${themeConfig.accentPrimary}, ${themeConfig.accentPrimary})`,
                 }}
               />
             </div>
@@ -309,7 +309,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
       <div className="flex items-center justify-end gap-3 w-1/4 min-w-[200px]">
         {/* Quality indicator */}
         <div className="hidden xl:flex items-center gap-1 px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-white/40 font-mono">
-          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <Sparkles className="w-3 h-3 text-[var(--accent-primary)]" />
           <span>High Quality</span>
         </div>
 
@@ -320,7 +320,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
             isSponsorBlockEnabled
               ? sponsorBlockSegments.length > 0
                 ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10'
-                : 'text-cyan-400/80 hover:text-cyan-300'
+                : 'text-[var(--accent-primary)]/80 hover:text-cyan-300'
               : 'text-white/20 hover:text-white/40'
           }`}
           title={
@@ -360,7 +360,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
         <button
           onClick={onToggleLyrics}
           className={`p-2 rounded-full transition-colors ${
-            isLyricsOpen ? 'text-cyan-400 bg-white/10' : 'text-white/40 hover:text-white/80'
+            isLyricsOpen ? 'text-[var(--accent-primary)] bg-white/10' : 'text-white/40 hover:text-white/80'
           }`}
           title="Lyrics"
         >
@@ -371,7 +371,7 @@ export const BottomPlayer: React.FC<BottomPlayerProps> = ({
         <button
           onClick={onToggleQueue}
           className={`p-2 rounded-full transition-colors ${
-            isQueueOpen ? 'text-cyan-400 bg-white/10' : 'text-white/40 hover:text-white/80'
+            isQueueOpen ? 'text-[var(--accent-primary)] bg-white/10' : 'text-white/40 hover:text-white/80'
           }`}
           title="Queue"
         >

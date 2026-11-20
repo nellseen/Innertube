@@ -112,8 +112,11 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ onNavigate }) => {
                     const isAlbum = ('year' in item && 'artists' in item) || item.id.startsWith('MPREb') || item.id.startsWith('MPED');
                     const isPlaylist = !isSong && !isArtist && !isAlbum;
 
+                    const isMoodCategory = item.id.startsWith('mood:');
                     const handleItemClick = () => {
-                      if (isSong) {
+                      if (isMoodCategory) {
+                        onNavigate({ name: 'search', initialQuery: `${'title' in item ? item.title : 'music'} music` });
+                      } else if (isSong) {
                         playSong(item as Song, sec.items.filter((x) => /^[a-zA-Z0-9_-]{11}$/.test(x.id)) as Song[]);
                       } else if (isArtist) {
                         onNavigate({ name: 'artist', id: item.id });
@@ -125,6 +128,7 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ onNavigate }) => {
                     };
 
                     const handlePlay = async () => {
+                      if (isMoodCategory) return;
                       if (isSong) {
                         playSong(item as Song, sec.items.filter((x) => /^[a-zA-Z0-9_-]{11}$/.test(x.id)) as Song[]);
                       } else if (isPlaylist) {
@@ -146,7 +150,7 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ onNavigate }) => {
                         item={item}
                         type={isArtist ? 'artist' : isAlbum ? 'album' : isPlaylist ? 'playlist' : 'song'}
                         onClick={handleItemClick}
-                        onPlay={handlePlay}
+                        onPlay={isMoodCategory ? undefined : handlePlay}
                       />
                     );
                   })}

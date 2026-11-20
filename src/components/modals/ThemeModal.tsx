@@ -21,10 +21,6 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-lg rounded-3xl glass-modal p-6 sm:p-7 animate-in zoom-in-95 duration-200 overflow-hidden"
       >
-        {/* Ambient Top Glow */}
-        <div className="absolute -top-24 -left-24 w-60 h-60 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-60 h-60 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -41,7 +37,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-white tracking-tight">Pilih Tema Tampilan</h3>
-            <p className="text-xs text-white/50">Sesuaikan palet warna & glassmorphism Aetheria</p>
+            <p className="text-xs text-white/50">Pilih palet warna untuk Aetheria</p>
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { NavigationPage } from './types/music.js';
 import { PlayerProvider, usePlayer } from './contexts/PlayerContext.js';
 import { LibraryProvider } from './contexts/LibraryContext.js';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext.js';
+import { ThemeProvider } from './contexts/ThemeContext.js';
 import { SceneProvider, useScene } from './contexts/SceneContext.js';
 
 import { Sidebar } from './components/layout/Sidebar.js';
@@ -16,7 +16,6 @@ import { LyricsPanel } from './components/player/LyricsPanel.js';
 import { CreatePlaylistModal } from './components/modals/CreatePlaylistModal.js';
 import { AboutModal } from './components/modals/AboutModal.js';
 import { ThemeModal } from './components/modals/ThemeModal.js';
-import { LoadingScreen } from './components/modals/LoadingScreen.js';
 import { SceneCanvas } from './components/scene/SceneCanvas.js';
 
 import { HomePage } from './pages/HomePage.js';
@@ -37,11 +36,8 @@ function AppContent() {
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isThemeOpen, setIsThemeOpen] = useState(false);
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
-
-  const { themeConfig } = useTheme();
-  const { isBackgroundActive, activeSceneType, backgroundDim } = useScene();
   const { currentTrack } = usePlayer();
+  const { isBackgroundActive, activeSceneType, backgroundDim } = useScene();
 
   const navigateTo = (page: NavigationPage) => {
     setCurrentPage(page);
@@ -87,36 +83,18 @@ function AppContent() {
 
   return (
     <div
-      style={{ backgroundColor: themeConfig.bgBase }}
-      className="flex h-screen w-screen overflow-hidden text-white font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 transition-colors duration-500 relative"
+      className="relative flex h-screen w-screen overflow-hidden bg-[var(--bg-main)] text-white font-sans antialiased selection:bg-white/20 selection:text-white"
     >
-      {/* 1. Global Animated Media Scene as Background (when activated) */}
       {isBackgroundActive && currentPage.name !== 'scene' && (
         <>
-          <div className="fixed inset-0 pointer-events-none -z-20 overflow-hidden">
+          <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
             <SceneCanvas sceneType={activeSceneType} dimOverlay={0.25} />
           </div>
-          {/* Calibrated dark overlay guaranteeing 100% text readability */}
           <div
-            className="fixed inset-0 pointer-events-none -z-10 backdrop-blur-[3px] transition-colors duration-500"
-            style={{ backgroundColor: `rgba(9, 10, 15, ${Math.max(0.6, backgroundDim)})` }}
+            className="pointer-events-none fixed inset-0 z-[1]"
+            style={{ backgroundColor: `rgba(17, 18, 15, ${Math.max(0.72, backgroundDim)})` }}
           />
         </>
-      )}
-
-      {/* 2. Theme Ambient Background Glows */}
-      {!isBackgroundActive && (
-        <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-          <div
-            className="absolute top-[-10%] left-[-10%] w-[55%] h-[55%] rounded-full blur-[130px] opacity-40 transition-all duration-700"
-            style={{ backgroundColor: themeConfig.accentPrimary }}
-          />
-          <div
-            className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[130px] opacity-30 transition-all duration-700"
-            style={{ backgroundColor: themeConfig.accentSecondary }}
-          />
-          <div className="absolute top-[40%] right-[20%] w-[35%] h-[35%] rounded-full bg-rose-600/5 blur-[140px]" />
-        </div>
       )}
 
       {/* Desktop Sidebar */}
@@ -129,7 +107,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+      <main className="relative z-10 flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Mobile Header */}
         <MobileHeader
           currentPage={currentPage}
@@ -206,10 +184,6 @@ function AppContent() {
         onClose={() => setIsThemeOpen(false)}
       />
 
-      {/* First-load Loading Screen */}
-      {showLoadingScreen && (
-        <LoadingScreen onFinish={() => setShowLoadingScreen(false)} />
-      )}
     </div>
   );
 }

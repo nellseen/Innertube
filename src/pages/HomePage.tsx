@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Compass, Flame, Play, Sparkles, RefreshCw, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Compass, Flame, Play, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { HomeSection, NavigationPage, Song, Album, Artist, Playlist } from '../types/music.js';
 import { api } from '../services/api.js';
 import { CardItem } from '../components/cards/CardItem.js';
@@ -63,54 +63,38 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-32 custom-scrollbar">
-      {/* Header Banner */}
-      <div className="relative rounded-3xl overflow-hidden glass-surface p-6 md:p-8 mb-8">
-        <div className="relative z-10 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-medium mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Discover YouTube Music with Innertube</span>
-          </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
-            Immersive Sound.
-            <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-indigo-300 to-rose-400 bg-clip-text text-transparent">
-              Glassmorphism Aesthetic.
-            </span>
-          </h1>
-          <p className="text-xs md:text-sm text-white/50 mb-6">
-            Explore popular artists, curated albums, trending releases, and synchronized lyrics directly from the music engine.
+      {/* Clear entry point: one message, two useful actions */}
+      <header className="mb-10 md:mb-14 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent-primary)]">
+            Aetheria <span className="mx-1.5 text-white/25">/</span> Listening room
           </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => onNavigate({ name: 'trending' })}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-black font-semibold text-xs md:text-sm hover:scale-105 active:scale-95 transition-all shadow-lg"
-            >
-              <Flame className="w-4 h-4 fill-black" />
-              Explore Trending
-            </button>
-            <button
-              onClick={() => {
-                popularSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-medium text-xs md:text-sm border border-white/15 transition-all"
-            >
-              <Users className="w-4 h-4 text-cyan-400" />
-              Popular Artists
-            </button>
-            <button
-              onClick={() => onNavigate({ name: 'search' })}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white font-medium text-xs md:text-sm border border-white/10 transition-all"
-            >
-              <Compass className="w-4 h-4" />
-              Search Library
-            </button>
-          </div>
+          <h1 className="mt-3 text-3xl md:text-5xl font-semibold leading-[1.08] tracking-[-0.04em] text-white">
+            Find your next repeat.
+          </h1>
+          <p className="mt-3 max-w-xl text-sm md:text-base leading-6 text-white/55">
+            New discoveries, familiar favourites, and music worth keeping close.
+          </p>
         </div>
-
-        {/* Ambient background decoration */}
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
-      </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => onNavigate({ name: 'search' })}
+            className="flex items-center gap-2 rounded-lg bg-[var(--accent-primary)] px-4 py-2.5 text-sm font-semibold text-[#171811] transition-colors hover:brightness-110"
+          >
+            <Compass className="h-4 w-4" />
+            Search music
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate({ name: 'trending' })}
+            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-medium text-white/75 transition-colors hover:border-white/20 hover:bg-white/[0.04] hover:text-white"
+          >
+            <Flame className="h-4 w-4" />
+            Browse charts
+          </button>
+        </div>
+      </header>
 
       {/* Loading Skeleton */}
       {isLoading && (
@@ -130,7 +114,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="p-8 rounded-3xl bg-white/[0.02] border border-white/10 text-center flex flex-col items-center gap-3">
+        <div className="p-6 rounded-xl bg-white/[0.02] border border-white/10 text-center flex flex-col items-center gap-3">
           <p className="text-sm text-rose-400 font-medium">{error}</p>
           <button
             onClick={loadHome}
@@ -147,14 +131,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         <section ref={popularSectionRef} className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="flex items-center gap-2 text-xs text-cyan-400 font-medium mb-1">
-                <Users className="w-3.5 h-3.5" />
-                <span>Trending Icons</span>
-                <span aria-hidden="true" className="text-white/20">·</span>
-                <span className="text-white/40">Top Charting Worldwide</span>
-              </div>
-              <h2 className="text-lg md:text-2xl font-bold text-white tracking-tight">
-                Popular Artists
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">Artists</p>
+              <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-white">
+                Popular artists
               </h2>
             </div>
 
@@ -162,14 +141,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={scrollArtistsLeft}
-                className="w-8 h-8 rounded-full bg-white/[0.04] hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                className="w-9 h-9 rounded-lg border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.05] transition-colors"
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={scrollArtistsRight}
-                className="w-8 h-8 rounded-full bg-white/[0.04] hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                className="w-9 h-9 rounded-lg border border-white/10 flex items-center justify-center text-white/55 hover:text-white hover:bg-white/[0.05] transition-colors"
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -180,11 +159,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           {/* Artists Horizontal Carousel */}
           <div
             ref={artistsScrollRef}
-            className="flex items-stretch gap-3 md:gap-4 overflow-x-auto pb-4 pt-1 -mx-2 px-2 custom-scrollbar scroll-smooth"
+            className="flex items-start gap-5 md:gap-7 overflow-x-auto pb-4 pt-1 -mx-2 px-2 custom-scrollbar scroll-smooth"
           >
             {popularArtists.map((artist) => {
-              const handleArtistPlay = async (e: React.MouseEvent) => {
-                e.stopPropagation();
+              const handleArtistPlay = async () => {
                 try {
                   const data = await api.getArtist(artist.id);
                   if (data?.topSongs?.length) {
@@ -196,39 +174,37 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               };
 
               return (
-                <div
-                  key={artist.id}
-                  onClick={() => onNavigate({ name: 'artist', id: artist.id })}
-                  className="group relative flex flex-col items-center text-center p-3 sm:p-4 rounded-3xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05] hover:border-cyan-500/30 transition-all duration-300 cursor-pointer shrink-0 w-32 sm:w-36 md:w-40 select-none hover:-translate-y-1 shadow-lg"
-                >
-                  {/* Circular Avatar */}
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden mb-3 bg-white/5 border border-white/10 group-hover:border-cyan-400/50 shadow-md transition-colors duration-300">
-                    <img
-                      src={artist.thumbnail}
-                      alt={artist.name}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                    />
-                    {/* Hover play button */}
-                    <button
-                      onClick={handleArtistPlay}
-                      className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-cyan-400 hover:bg-cyan-300 text-black shadow-lg flex items-center justify-center opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 active:scale-95"
-                      title={`Play top songs by ${artist.name}`}
-                    >
-                      <Play className="w-3.5 h-3.5 fill-black ml-0.5" />
-                    </button>
-                  </div>
-
-                  {/* Name */}
-                  <h3 className="w-full text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white truncate transition-colors">
-                    {typeof artist.name === 'string' ? artist.name : ''}
-                  </h3>
-
-                  {/* Unboxed audience metadata */}
-                  <p className="w-full text-[10px] sm:text-[11px] text-white/40 truncate mt-0.5">
-                    {typeof artist.subscribers === 'string' ? artist.subscribers.replace(/^Artist\s*•?\s*/i, '') : 'Artist'}
-                  </p>
+                <div key={artist.id} className="group relative w-24 shrink-0 select-none sm:w-28">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate({ name: 'artist', id: artist.id })}
+                    aria-label={`Open ${artist.name}`}
+                    className="flex w-full flex-col items-center gap-2 rounded-lg text-center focus-visible:outline-offset-4"
+                  >
+                    <span className="relative block h-20 w-20 overflow-hidden rounded-full bg-white/[0.04] sm:h-24 sm:w-24 md:h-28 md:w-28">
+                      <img
+                        src={artist.thumbnail}
+                        alt=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                      />
+                    </span>
+                    <span className="w-full truncate text-xs font-medium text-white/85 group-hover:text-white sm:text-sm">
+                      {typeof artist.name === 'string' ? artist.name : ''}
+                    </span>
+                    <span className="w-full truncate text-[11px] text-white/45">
+                      {typeof artist.subscribers === 'string' ? artist.subscribers.replace(/^Artist\s*•?\s*/i, '') : 'Artist'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleArtistPlay}
+                    aria-label={`Play top songs by ${artist.name}`}
+                    className="absolute right-0 top-12 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#171811] opacity-100 transition-transform duration-150 hover:scale-105 sm:top-16 sm:scale-90 sm:opacity-0 sm:group-hover:scale-100 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 md:top-20"
+                  >
+                    <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />
+                  </button>
                 </div>
               );
             })}
@@ -248,7 +224,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             return (
               <section key={idx} className="mb-10">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
+                  <h2 className="text-lg md:text-xl font-semibold text-white tracking-tight">
                     {toSafeText(sec.title, 'Featured')}
                   </h2>
                 </div>
