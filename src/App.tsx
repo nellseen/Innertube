@@ -83,7 +83,7 @@ function AppContent() {
 
   return (
     <div
-      className="relative flex h-screen w-screen overflow-hidden bg-[var(--bg-main)] text-white font-sans antialiased selection:bg-white/20 selection:text-white"
+      className="relative flex h-screen h-[100dvh] min-h-0 w-screen overflow-hidden bg-[var(--bg-main)] text-white font-sans antialiased selection:bg-white/20 selection:text-white"
     >
       {isBackgroundActive && currentPage.name !== 'scene' && (
         <>
@@ -107,7 +107,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <main className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Mobile Header */}
         <MobileHeader
           currentPage={currentPage}

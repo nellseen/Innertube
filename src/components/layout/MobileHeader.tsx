@@ -44,7 +44,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   };
 
   return (
-    <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[var(--bg-main)]/75 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.35)] pt-safe">
+    <header className="md:hidden sticky top-0 z-30 flex shrink-0 items-center justify-between px-4 py-3 bg-[var(--bg-main)]/75 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.35)] pt-safe">
       <div
         onClick={onOpenAbout}
         className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"

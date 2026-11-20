@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @layer utilities {
-  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.75rem); }
-  .pt-safe { padding-top: env(safe-area-inset-top, 0.75rem); }
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem); }
+  .pt-safe { padding-top: max(env(safe-area-inset-top, 0px), 0.75rem); }
 }
 
 /* Quiet, matte surfaces. Theme changes affect the accent, not the whole UI. */

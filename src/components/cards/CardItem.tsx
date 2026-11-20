@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play } from 'lucide-react';
+import { Music2, Play } from 'lucide-react';
 import type { Album, Artist, Playlist, Song } from '../../types/music.js';
 import { toSafeText } from '../../utils/text.js';
 
@@ -46,30 +46,38 @@ export const CardItem: React.FC<CardItemProps> = ({ item, type, onClick, onPlay 
         aria-label={isMoodCategory ? `Explore ${title} music` : `Open ${title}`}
         className="w-full rounded-lg text-left focus-visible:outline-offset-2"
       >
-        <div className={`relative mb-3 aspect-square w-full overflow-hidden bg-white/[0.04] ${isArtist ? 'rounded-full' : 'rounded-lg'}`}>
-          {isMoodCategory ? (
-            <div className="flex h-full items-end bg-gradient-to-br from-white/[0.09] to-transparent p-4">
-              <span className="text-2xl font-semibold tracking-tight text-white/80">{title.slice(0, 1)}</span>
+        {isMoodCategory ? (
+          <div className="mb-1 flex min-h-[68px] items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 transition-colors group-hover:bg-white/[0.05]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-[var(--accent-primary)]">
+              <Music2 className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-white/90 group-hover:text-white">{title}</span>
+              <span className="mt-0.5 block truncate text-xs text-white/45">Explore music</span>
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className={`relative mb-3 aspect-square w-full overflow-hidden bg-white/[0.04] ${isArtist ? 'rounded-full' : 'rounded-lg'}`}>
+              <img
+                src={item.thumbnail}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              />
             </div>
-          ) : (
-            <img
-              src={item.thumbnail}
-              alt=""
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-            />
-          )}
-        </div>
-        <div className="min-w-0">
-          <h3 className={`truncate text-sm font-medium text-white/90 group-hover:text-white ${isArtist ? 'text-center' : ''}`}>
-            {title}
-          </h3>
-          {subtitle && (
-            <p className={`mt-0.5 truncate text-xs text-white/50 ${isArtist ? 'text-center' : ''}`}>
-              {subtitle}
-            </p>
-          )}
-        </div>
+            <div className="min-w-0">
+              <h3 className={`truncate text-sm font-medium text-white/90 group-hover:text-white ${isArtist ? 'text-center' : ''}`}>
+                {title}
+              </h3>
+              {subtitle && (
+                <p className={`mt-0.5 truncate text-xs text-white/50 ${isArtist ? 'text-center' : ''}`}>
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </button>
       {onPlay && !isMoodCategory && (
         <button
