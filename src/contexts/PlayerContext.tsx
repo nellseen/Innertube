@@ -123,6 +123,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const requestIdRef = useRef<number>(0);
   const currentTrackRef = useRef<Song | null>(null);
   currentTrackRef.current = currentTrack;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const currentTimeRef = useRef(currentTime);
+  currentTimeRef.current = currentTime;
+  const durationRef = useRef(duration);
+  durationRef.current = duration;
+  const mediaSessionActionsRef = useRef<{
+    togglePlay?: () => void;
+    previous?: () => void;
+    next?: () => void;
+    seek?: (time: number) => void;
+  }>({});
 
   const queueRef = useRef<Song[]>([]);
   queueRef.current = queue;
@@ -270,31 +282,43 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  // Update MediaSession (Section 24)
+  // Keep lock-screen and notification metadata in sync with the active track.
   useEffect(() => {
-    if (!currentTrack || typeof window === 'undefined' || !('mediaSession' in navigator)) return;
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+
+    const mediaSession = navigator.mediaSession;
+    if (!currentTrack) {
+      try {
+        mediaSession.metadata = null;
+        mediaSession.playbackState = 'none';
+        mediaSession.setPositionState?.();
+      } catch {
+        // Media Session support varies by browser and playback state.
+      }
+      return;
+    }
 
     try {
       const artistNames = Array.isArray(currentTrack.artists)
-        ? currentTrack.artists.map((a) => a.name).join(', ')
+        ? currentTrack.artists.map((artist) => artist.name).filter(Boolean).join(', ')
         : typeof (currentTrack as any).artist === 'string'
-        ? (currentTrack as any).artist
-        : 'Unknown Artist';
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.title,
-        artist: artistNames,
-        album: currentTrack.album?.name || 'Aetheria Music',
-        artwork: [
-          { src: currentTrack.thumbnail, sizes: '96x96', type: 'image/jpeg' },
-          { src: currentTrack.thumbnail, sizes: '128x128', type: 'image/jpeg' },
-          { src: currentTrack.thumbnail, sizes: '256x256', type: 'image/jpeg' },
-          { src: currentTrack.thumbnail, sizes: '512x512', type: 'image/jpeg' },
-        ],
-      });
+          ? (currentTrack as any).artist
+          : 'Unknown Artist';
+      const artwork = currentTrack.thumbnail
+        ? [96, 128, 256, 512].map((size) => ({ src: currentTrack.thumbnail, sizes: `${size}x${size}` }))
+        : [];
 
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-    } catch (e) {
-      console.warn('MediaSession metadata error', e);
+      if (typeof MediaMetadata !== 'undefined') {
+        mediaSession.metadata = new MediaMetadata({
+          title: currentTrack.title || 'Unknown title',
+          artist: artistNames || 'Unknown Artist',
+          album: currentTrack.album?.name || 'Aetheria Music',
+          artwork,
+        });
+      }
+      mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch (error) {
+      console.warn('[PLAYER] Failed to update Media Session metadata', error);
     }
   }, [currentTrack, isPlaying]);
 
@@ -339,7 +363,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             wrapper.style.pointerEvents = 'none';
             document.body.appendChild(wrapper);
           }
-
           // Always recreate a fresh div target so YT.Player never attempts to bind to an existing iframe
           wrapper.innerHTML = '<div id="aetheria-yt-player"></div>';
 
@@ -863,57 +886,94 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, []);
 
-  // Register MediaSession action handlers (Section 24)
+  // Keep current controls available to stable OS action handlers.
+  mediaSessionActionsRef.current = { togglePlay, previous, next, seek };
+
+  // Register supported Media Session actions once. Unsupported actions are
+  // isolated so one browser limitation does not disable the rest of the controls.
   useEffect(() => {
-    if (typeof window === 'undefined' || !('mediaSession' in navigator)) return;
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    const mediaSession = navigator.mediaSession;
+    if (typeof mediaSession.setActionHandler !== 'function') return;
 
-    try {
-      navigator.mediaSession.setActionHandler('play', () => togglePlay());
-      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-      navigator.mediaSession.setActionHandler('previoustrack', () => previous());
-      navigator.mediaSession.setActionHandler('nexttrack', () => next());
-      navigator.mediaSession.setActionHandler('stop', () => {
-        if (isPlaying) togglePlay();
-        seek(0);
-      });
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (typeof details.seekTime === 'number') seek(details.seekTime);
-      });
-      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-        const offset = details.seekOffset || 10;
-        seek(Math.max(0, currentTime - offset));
-      });
-      navigator.mediaSession.setActionHandler('seekforward', (details) => {
-        const offset = details.seekOffset || 10;
-        seek(Math.min(duration, currentTime + offset));
-      });
-    } catch (e) {
-      console.warn('Failed to bind MediaSession action handler', e);
+    const handlers: Array<[MediaSessionAction, MediaSessionActionHandler]> = [
+      ['play', () => {
+        if (!isPlayingRef.current) mediaSessionActionsRef.current.togglePlay?.();
+      }],
+      ['pause', () => {
+        if (isPlayingRef.current) mediaSessionActionsRef.current.togglePlay?.();
+      }],
+      ['previoustrack', () => mediaSessionActionsRef.current.previous?.()],
+      ['nexttrack', () => mediaSessionActionsRef.current.next?.()],
+      ['stop', () => {
+        if (isPlayingRef.current) mediaSessionActionsRef.current.togglePlay?.();
+        mediaSessionActionsRef.current.seek?.(0);
+      }],
+      ['seekto', (details) => {
+        if (typeof details.seekTime === 'number' && Number.isFinite(details.seekTime)) {
+          mediaSessionActionsRef.current.seek?.(details.seekTime);
+        }
+      }],
+      ['seekbackward', (details) => {
+        const offset = typeof details.seekOffset === 'number' ? details.seekOffset : 10;
+        mediaSessionActionsRef.current.seek?.(Math.max(0, currentTimeRef.current - offset));
+      }],
+      ['seekforward', (details) => {
+        const offset = typeof details.seekOffset === 'number' ? details.seekOffset : 10;
+        const end = durationRef.current > 0 ? durationRef.current : Number.POSITIVE_INFINITY;
+        mediaSessionActionsRef.current.seek?.(Math.min(end, currentTimeRef.current + offset));
+      }],
+    ];
+
+    for (const [action, handler] of handlers) {
+      try {
+        mediaSession.setActionHandler(action, handler);
+      } catch {
+        // This action is not supported by this browser.
+      }
     }
-  }, [togglePlay, previous, next, seek, currentTime, duration, isPlaying]);
 
-  // Update MediaSession Position State (Timeline scrubber on lock screen & OS media controls)
+    return () => {
+      for (const [action] of handlers) {
+        try {
+          mediaSession.setActionHandler(action, null);
+        } catch {
+          // Ignore unsupported actions while cleaning up.
+        }
+      }
+      try {
+        mediaSession.metadata = null;
+        mediaSession.playbackState = 'none';
+        mediaSession.setPositionState?.();
+      } catch {
+        // Ignore browser-specific cleanup errors.
+      }
+    };
+  }, []);
+
+  // Keep the OS scrubber synchronized with the active playback position.
   useEffect(() => {
     if (
-      typeof window === 'undefined' ||
+      typeof navigator === 'undefined' ||
       !('mediaSession' in navigator) ||
-      !('setPositionState' in navigator.mediaSession) ||
-      !duration ||
-      duration <= 0
-    ) {
-      return;
-    }
+      typeof navigator.mediaSession.setPositionState !== 'function'
+    ) return;
 
     try {
+      if (!currentTrack || !Number.isFinite(duration) || duration <= 0) {
+        navigator.mediaSession.setPositionState();
+        return;
+      }
+
       navigator.mediaSession.setPositionState({
-        duration: Math.max(0, duration),
+        duration,
         playbackRate: 1,
         position: Math.min(Math.max(0, currentTime), duration),
       });
-    } catch (e) {
-      // Safe fallback if audio is transitioning
+    } catch {
+      // Browsers can reject position state during track transitions.
     }
-  }, [currentTime, duration]);
+  }, [currentTrack, currentTime, duration]);
 
   return (
     <PlayerContext.Provider
