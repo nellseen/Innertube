@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Heart, History, ListMusic, PlusCircle, Play, Trash2 } from 'lucide-react';
+import { Download, Heart, History, ListMusic, PlusCircle, Play, Share2, Trash2 } from 'lucide-react';
 import type { NavigationPage, Song } from '../types/music.js';
 import { useLibrary } from '../contexts/LibraryContext.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
@@ -39,6 +39,30 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   };
 
   const selectedPlaylist = playlists.find((p) => p.id === selectedPlaylistId);
+
+  const handleSharePlaylist = async () => {
+    if (!selectedPlaylist) return;
+    const text = selectedPlaylist.tracks.map((song, index) => {
+      const title = String(song.title || 'Unknown title');
+      return (index + 1) + '. ' + title + ' - https://music.youtube.com/watch?v=' + encodeURIComponent(song.id);
+    }).join('\n');
+    const payload = {
+      title: selectedPlaylist.name,
+      text: text || selectedPlaylist.name,
+      url: selectedPlaylist.sourceUrl,
+    };
+    try {
+      if (navigator.share) await navigator.share(payload);
+      else await navigator.clipboard.writeText([selectedPlaylist.name, text].filter(Boolean).join('\n'));
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      try {
+        await navigator.clipboard.writeText([selectedPlaylist.name, text].filter(Boolean).join('\n'));
+      } catch {
+        console.warn('Sharing is unavailable in this browser');
+      }
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-32 custom-scrollbar">
@@ -236,6 +260,17 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                 <div className="flex items-center gap-2">
                   {selectedPlaylist.tracks.length > 0 && (
                     <button
+                      type="button"
+                      onClick={handleSharePlaylist}
+                      aria-label="Share this playlist"
+                      className="flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2.5 text-xs font-medium text-white/70 hover:bg-white/[0.06] hover:text-white"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">Share</span>
+                    </button>
+                  )}
+                  {selectedPlaylist.tracks.length > 0 && (
+                    <button
                       onClick={() => handlePlayCollection(selectedPlaylist.tracks)}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-black font-semibold text-xs hover:scale-105 active:scale-95 transition-all shadow-lg"
                     >
@@ -275,6 +310,12 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
                         onNavigateToAlbum={(id) => onNavigate({ name: 'album', id })}
                         onNavigateToChord={(s) => onNavigate({ name: 'chords', song: s })}
                       />
+                      {(song.practiceKey || typeof song.capo === 'number') && (
+                        <p className="pl-14 pb-2 text-[11px] text-white/45">
+                          Practice settings: {song.practiceKey ? 'Key ' + song.practiceKey : 'Key not set'}
+                          {typeof song.capo === 'number' ? ' / Capo ' + song.capo : ''}
+                        </p>
+                      )}
                       <button
                         onClick={() => removeFromPlaylist(selectedPlaylist.id, song.id)}
                         className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 rounded text-white/20 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"

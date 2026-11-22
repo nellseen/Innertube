@@ -191,7 +191,16 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setPlaylists((prev) =>
       prev.map((p) => {
         if (p.id === playlistId) {
-          if (p.tracks.some((t) => t.id === song.id)) return p;
+          const existing = p.tracks.some((track) => track.id === song.id);
+          if (existing) {
+            if (song.practiceKey === undefined && song.capo === undefined) return p;
+            return {
+              ...p,
+              tracks: p.tracks.map((track) => track.id === song.id
+                ? { ...track, ...song, practiceKey: song.practiceKey ?? track.practiceKey, capo: song.capo ?? track.capo }
+                : track),
+            };
+          }
           return { ...p, tracks: [...p.tracks, song] };
         }
         return p;

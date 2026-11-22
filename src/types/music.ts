@@ -7,6 +7,8 @@ export interface Song {
   durationFormatted?: string;
   thumbnail: string;
   isExplicit?: boolean;
+  practiceKey?: string;
+  capo?: number;
 }
 
 export interface Artist {

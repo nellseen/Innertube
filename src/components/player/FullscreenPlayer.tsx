@@ -12,6 +12,7 @@ import {
   VolumeX,
   Heart,
   Mic2,
+  Moon,
   ListMusic,
   Share2,
   RefreshCw,
@@ -94,6 +95,8 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
     lyrics,
     isLoadingLyrics,
     sponsorBlockSegments,
+    sleepTimerEndsAt,
+    setSleepTimer,
     isSponsorBlockEnabled,
     toggleSponsorBlock,
     sponsorBlockNotice,
@@ -118,6 +121,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   const [showTranslation, setShowTranslation] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
   const [showChordModal, setShowChordModal] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -216,6 +220,46 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
     }
   }, [currentTrack, fetchLyrics, artistName]);
 
+  const handleShareTrack = useCallback(async () => {
+    if (!currentTrack) return;
+    const url = 'https://music.youtube.com/watch?v=' + encodeURIComponent(currentTrack.id);
+    const payload = {
+      title: toSafeText(currentTrack.title, 'Aetheria Music'),
+      text: toSafeText(currentTrack.title) + ' by ' + artistName,
+      url,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Link copied');
+        window.setTimeout(() => setShareMessage(''), 2200);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Link copied');
+        window.setTimeout(() => setShareMessage(''), 2200);
+      } catch {
+        setShareMessage('Share is unavailable in this browser');
+        window.setTimeout(() => setShareMessage(''), 2600);
+      }
+    }
+  }, [currentTrack, artistName]);
+
+  const handleCycleSleepTimer = useCallback(() => {
+    const remaining = sleepTimerEndsAt ? Math.max(0, Math.ceil((sleepTimerEndsAt - Date.now()) / 60000)) : 0;
+    const nextMinutes =
+      remaining === 0 ? 15 :
+      remaining <= 15 ? 30 :
+      remaining <= 30 ? 45 :
+      remaining <= 45 ? 60 :
+      remaining <= 60 ? 90 : 0;
+    setSleepTimer(nextMinutes);
+  }, [sleepTimerEndsAt, setSleepTimer]);
+
   if (!isOpen || !currentTrack) return null;
 
   const isFav = isFavorite(currentTrack.id);
@@ -228,19 +272,9 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#07080D]/95 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200 select-none overflow-hidden">
-      {/* Background ambient glow matching track */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <div
-          className="absolute -top-1/4 -left-1/4 w-[150%] h-[150%] opacity-20 blur-[140px]"
-          style={{
-            backgroundImage: `radial-gradient(circle at center, rgba(34, 211, 238, 0.4), rgba(244, 63, 94, 0.2), transparent 70%)`,
-          }}
-        />
-      </div>
-
+    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--bg-main)] animate-in fade-in duration-150 select-none overflow-hidden">
       {/* Header bar */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+      <header className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b border-white/[0.06]">
         <button
           onClick={onClose}
           className="p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
@@ -254,7 +288,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             onClick={() => setActiveTab('artwork')}
             className={`px-3 py-1 rounded-xl text-xs font-medium transition-all ${
               activeTab === 'artwork'
-                ? 'bg-white text-black shadow-md'
+                ? 'bg-[var(--accent-primary)] text-black shadow-sm'
                 : 'text-white/60 hover:text-white'
             }`}
           >
@@ -264,7 +298,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             onClick={() => setActiveTab('lyrics')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium transition-all ${
               activeTab === 'lyrics'
-                ? 'bg-white text-black shadow-md'
+                ? 'bg-[var(--accent-primary)] text-black shadow-sm'
                 : 'text-white/60 hover:text-white'
             }`}
           >
@@ -275,7 +309,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             onClick={() => setActiveTab('queue')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium transition-all ${
               activeTab === 'queue'
-                ? 'bg-white text-black shadow-md'
+                ? 'bg-[var(--accent-primary)] text-black shadow-sm'
                 : 'text-white/60 hover:text-white'
             }`}
           >
@@ -292,7 +326,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
               isSponsorBlockEnabled
                 ? sponsorBlockSegments.length > 0
                   ? 'text-amber-400 hover:text-amber-300 bg-amber-400/10'
-                  : 'text-cyan-400/80 hover:text-cyan-300'
+                  : 'text-[var(--accent-primary)]/80 hover:text-cyan-300'
                 : 'text-white/30 hover:text-white/60'
             }`}
             title={
@@ -306,6 +340,28 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             <ShieldCheck className="w-5 h-5" />
           </button>
 
+          <button
+            type="button"
+            onClick={handleShareTrack}
+            className="p-2 rounded-full text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors"
+            aria-label="Share this song"
+            title={shareMessage || 'Share song'}
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleCycleSleepTimer}
+            aria-pressed={Boolean(sleepTimerEndsAt)}
+            aria-label={sleepTimerEndsAt ? 'Change sleep timer' : 'Set sleep timer'}
+            title={sleepTimerEndsAt
+              ? ('Sleep timer: ' + Math.max(1, Math.ceil((sleepTimerEndsAt - Date.now()) / 60000)) + ' min remaining')
+              : 'Set sleep timer'}
+            className="p-2 rounded-full text-white/60 hover:text-[var(--accent-primary)] hover:bg-white/[0.06] transition-colors"
+          >
+            <Moon className="w-4 h-4" />
+          </button>
+          <span role="status" aria-live="polite" className="sr-only">{shareMessage}</span>
           <button
             onClick={() => toggleFavorite(currentTrack)}
             className={`p-2 rounded-full transition-colors ${
@@ -321,7 +377,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center max-w-4xl mx-auto w-full custom-scrollbar">
         {activeTab === 'artwork' && (
           <div className="w-full flex flex-col items-center justify-center gap-6">
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-3xl overflow-hidden bg-white/5 border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
+            <div className="relative w-52 h-52 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-3xl overflow-hidden bg-white/5 border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
               <img
                 src={currentTrack.thumbnail}
                 alt={currentTrack.title}
@@ -367,7 +423,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
 
                 {/* Synced status */}
                 {(lyrics.syncAvailable || lyrics.type === 'synced') && (
-                  <span className="text-[10px] text-cyan-400 font-medium tracking-wide flex items-center gap-1 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full">
+                  <span className="text-[10px] text-[var(--accent-primary)] font-medium tracking-wide flex items-center gap-1 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                     Synced
                   </span>
@@ -420,7 +476,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                     onClick={handleResumeSync}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-[11px] font-semibold transition-all active:scale-95 cursor-pointer"
                   >
-                    <Radio className="w-3 h-3 animate-pulse text-cyan-400" />
+                    <Radio className="w-3 h-3 animate-pulse text-[var(--accent-primary)]" />
                     <span>Sync</span>
                   </button>
                 )}
@@ -454,7 +510,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
             ) : (
               /* Graceful Fallback Card */
               <div className="my-auto py-12 text-center flex flex-col items-center justify-center max-w-md mx-auto">
-                <div className="w-20 h-20 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-4 text-cyan-400/60 shadow-xl">
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-4 text-[var(--accent-primary)]/60 shadow-xl">
                   <Mic2 className="w-10 h-10 opacity-40" />
                 </div>
                 <h4 className="text-lg font-bold text-white mb-1">Lyrics Unavailable</h4>
@@ -609,7 +665,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
           <button
             onClick={toggleShuffle}
             className={`p-2 rounded-full transition-colors ${
-              isShuffle ? 'text-cyan-400' : 'text-white/40 hover:text-white'
+              isShuffle ? 'text-[var(--accent-primary)]' : 'text-white/40 hover:text-white'
             }`}
           >
             <Shuffle className="w-5 h-5" />
@@ -646,7 +702,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
           <button
             onClick={cycleRepeat}
             className={`p-2 rounded-full transition-colors ${
-              repeatMode !== 'off' ? 'text-cyan-400' : 'text-white/40 hover:text-white'
+              repeatMode !== 'off' ? 'text-[var(--accent-primary)]' : 'text-white/40 hover:text-white'
             }`}
           >
             {repeatMode === 'one' ? (

@@ -262,8 +262,15 @@ export const SearchPage: React.FC<SearchPageProps> = ({ initialQuery = '', onNav
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="max-w-md mx-auto p-6 rounded-2xl bg-white/[0.02] border border-rose-500/20 text-center text-rose-400 text-sm">
-          {error}
+        <div className="max-w-md mx-auto p-6 rounded-2xl bg-white/[0.02] border border-rose-500/20 text-center">
+          <p className="text-sm text-rose-300">{error}</p>
+          <button
+            type="button"
+            onClick={() => performSearch(query, activeFilter)}
+            className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-white/75 hover:bg-white/[0.06]"
+          >
+            Try search again
+          </button>
         </div>
       )}
 

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Trash2, Music } from 'lucide-react';
 import { usePlayer } from '../../contexts/PlayerContext.js';
+import { useLibrary } from '../../contexts/LibraryContext.js';
 import { SongRow } from '../cards/SongRow.js';
 
 interface QueueModalProps {
@@ -17,6 +18,20 @@ export const QueueModal: React.FC<QueueModalProps> = ({
   onNavigateToAlbum,
 }) => {
   const { queue, currentTrack, currentIndex, clearQueue } = usePlayer();
+  const { createPlaylist, addToPlaylist } = useLibrary();
+  const [setlistName, setSetlistName] = useState('');
+  const [savedSetlist, setSavedSetlist] = useState(false);
+
+  const saveQueueAsSetlist = () => {
+    const songs = queue.length ? queue : currentTrack ? [currentTrack] : [];
+    if (!songs.length) return;
+    const name = setlistName.trim() || ('Practice setlist ' + new Date().toLocaleDateString());
+    const playlistId = createPlaylist(name, 'Practice setlist saved from the playback queue.');
+    songs.forEach((song) => addToPlaylist(playlistId, song));
+    setSavedSetlist(true);
+    setSetlistName('');
+    window.setTimeout(() => setSavedSetlist(false), 2500);
+  };
 
   if (!isOpen) return null;
 
@@ -47,6 +62,27 @@ export const QueueModal: React.FC<QueueModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Save a listening queue as a reusable practice setlist. */}
+      <form
+        className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]"
+        onSubmit={(event) => { event.preventDefault(); saveQueueAsSetlist(); }}
+      >
+        <input
+          aria-label="Practice setlist name"
+          value={setlistName}
+          onChange={(event) => setSetlistName(event.target.value)}
+          placeholder="Name this practice setlist"
+          className="min-w-0 flex-1 rounded-lg border border-[var(--border-subtle)] bg-black/20 px-3 py-2 text-xs text-white placeholder:text-white/35"
+        />
+        <button
+          type="submit"
+          disabled={!queue.length && !currentTrack}
+          className="shrink-0 rounded-lg bg-[var(--accent-primary)] px-3 py-2 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {savedSetlist ? <span role="status">Saved</span> : 'Save setlist'}
+        </button>
+      </form>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar">

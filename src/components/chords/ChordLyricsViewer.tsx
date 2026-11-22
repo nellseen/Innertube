@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { Song, NavigationPage } from '../../types/music.js';
 import { usePlayer } from '../../contexts/PlayerContext.js';
+import { useLibrary } from '../../contexts/LibraryContext.js';
 import { api } from '../../services/api.js';
 import { ChordDetailModal } from './ChordDetailModal.js';
 import { ChordPopover } from './ChordPopover.js';
@@ -111,6 +112,9 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   isEmbedded = false,
 }) => {
   const { currentTrack, isPlaying, playSong, togglePlay } = usePlayer();
+  const { playlists, addToPlaylist, createPlaylist } = useLibrary();
+  const [selectedSetlistId, setSelectedSetlistId] = useState('');
+  const [practiceSaveNotice, setPracticeSaveNotice] = useState('');
 
   // Determine starting song target
   const effectiveInitialSong = initialSong || (currentTrack ? {
@@ -153,7 +157,20 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   );
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [transpose, setTranspose] = useState<number>(0);
-  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [capo, setCapo] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('aetheria_capo'));
+      return Number.isInteger(saved) && saved >= 0 && saved <= 11 ? saved : 0;
+    } catch { return 0; }
+  });
+  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>(() => {
+    try {
+      const saved = localStorage.getItem('aetheria_chord_font_size');
+      return saved === 'sm' || saved === 'md' || saved === 'lg' ? saved : 'md';
+    } catch { return 'md'; }
+  });
+  const [performanceMode, setPerformanceMode] = useState(false);
+  const wakeLockRef = useRef<any>(null);
 
   // Auto-sync with player track: when user clicks or changes songs, chords automatically match!
   const [autoSyncWithPlayer, setAutoSyncWithPlayer] = useState<boolean>(true);
@@ -173,7 +190,12 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   // Auto-scroll state with configurable speed
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(false);
   // Speed multiplier: 0.5 to 4.0 (1.0 default = ~28px/sec)
-  const [scrollSpeed, setScrollSpeed] = useState<number>(1.0);
+  const [scrollSpeed, setScrollSpeed] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('aetheria_scroll_speed'));
+      return Number.isFinite(saved) && saved >= 0.25 && saved <= 4 ? saved : 1;
+    } catch { return 1; }
+  });
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const accumulatedScrollRef = useRef<number>(0);
@@ -181,6 +203,53 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   const lastTimeRef = useRef<number | null>(null);
 
   const SPEED_PRESETS = [0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
+  const effectiveTransposeRaw = transpose - capo;
+  const effectiveTransposeStep = ((effectiveTransposeRaw % 12) + 12) % 12;
+  const effectiveTranspose = effectiveTransposeStep > 6 ? effectiveTransposeStep - 12 : effectiveTransposeStep;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('aetheria_capo', String(capo));
+      localStorage.setItem('aetheria_chord_font_size', fontSize);
+      localStorage.setItem('aetheria_scroll_speed', String(scrollSpeed));
+    } catch {
+      // Preferences remain active for the current view if storage is unavailable.
+    }
+  }, [capo, fontSize, scrollSpeed]);
+
+  useEffect(() => {
+    if (!performanceMode) return;
+    let active = true;
+
+    const requestWakeLock = async () => {
+      if (!active || document.visibilityState !== 'visible' || !('wakeLock' in navigator)) return;
+      try {
+        const lock = await (navigator as any).wakeLock.request('screen');
+        if (!active) {
+          await lock.release();
+          return;
+        }
+        wakeLockRef.current = lock;
+        lock.addEventListener('release', () => {
+          if (wakeLockRef.current === lock) wakeLockRef.current = null;
+        });
+      } catch {
+        // Some browsers and power-saving modes do not allow a wake lock.
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !wakeLockRef.current) requestWakeLock();
+    };
+    requestWakeLock();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      active = false;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      wakeLockRef.current?.release?.();
+      wakeLockRef.current = null;
+    };
+  }, [performanceMode]);
 
   // Auto scroll loop using requestAnimationFrame for butter-smooth scrolling
   useEffect(() => {
@@ -374,6 +443,33 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     });
   };
 
+  const savePracticeSettings = () => {
+    if (!currentVideoId) return;
+    const baseSong = currentTrack?.id === currentVideoId
+      ? currentTrack
+      : effectiveInitialSong?.id === currentVideoId
+        ? effectiveInitialSong
+        : {
+            id: currentVideoId,
+            title: currentSongTitle,
+            artists: currentArtistName ? currentArtistName.split(',').map((name) => ({ name: name.trim() })) : [],
+            duration: 0,
+            thumbnail: currentThumbnail || '',
+          };
+    const targetId = selectedSetlistId || createPlaylist(
+      'Guitar Practice Setlist',
+      'Songs with saved chord key and capo settings.'
+    );
+    if (!selectedSetlistId) setSelectedSetlistId(targetId);
+    addToPlaylist(targetId, {
+      ...baseSong,
+      practiceKey: transposeChord(originalKey, transpose),
+      capo,
+    });
+    setPracticeSaveNotice('Saved key ' + transposeChord(originalKey, transpose) + ', capo ' + capo);
+    window.setTimeout(() => setPracticeSaveNotice(''), 2600);
+  };
+
   // Parser: converts raw lines into parsed tokens with chords above lyrics
   const parsedLines = useMemo<ParsedLine[]>(() => {
     if (!textInput) return [];
@@ -436,13 +532,13 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
     for (const line of parsedLines) {
       for (const tok of line.tokens) {
         if (tok.chord) {
-          const tChord = transposeChord(tok.chord, transpose);
+          const tChord = transposeChord(tok.chord, effectiveTranspose);
           set.add(tChord);
         }
       }
     }
     return Array.from(set);
-  }, [parsedLines, transpose]);
+  }, [parsedLines, effectiveTranspose]);
 
   const fontSizeClass =
     fontSize === 'sm'
@@ -644,6 +740,22 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
 
           {/* Action Controls Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              aria-pressed={performanceMode}
+              onClick={() => {
+                const next = !performanceMode;
+                setPerformanceMode(next);
+                setIsAutoScrolling(next);
+                if (next) setFontSize('lg');
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-white/70 transition-colors hover:bg-white/[0.08]"
+              title="Keep the screen awake and enlarge the chord sheet while practicing"
+            >
+              <Guitar className="h-3.5 w-3.5" />
+              <span>Performance</span>
+            </button>
+
             {/* Auto-Sync with Player Toggle */}
             {currentTrack && (
               <button
@@ -700,6 +812,52 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
                 </button>
               )}
             </div>
+
+            <label className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-xs text-white/60">
+              <span>Capo</span>
+              <select
+                aria-label="Capo position"
+                value={capo}
+                onChange={(event) => setCapo(Number(event.target.value))}
+                className="bg-transparent text-white outline-none"
+              >
+                {Array.from({ length: 12 }, (_, fret) => (
+                  <option key={fret} value={fret} className="bg-[#191a17]">
+                    {fret === 0 ? 'Off' : fret}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] p-1">
+              <select
+                aria-label="Choose a setlist for practice settings"
+                value={selectedSetlistId}
+                onChange={(event) => setSelectedSetlistId(event.target.value)}
+                className="max-w-36 bg-transparent px-1 text-xs text-white/70 outline-none"
+              >
+                <option value="" className="bg-[#191a17]">New setlist</option>
+                {playlists.map((playlist) => (
+                  <option key={playlist.id} value={playlist.id} className="bg-[#191a17]">
+                    {playlist.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={savePracticeSettings}
+                disabled={!currentVideoId}
+                className="rounded-lg bg-[var(--accent-primary)] px-2.5 py-1.5 text-xs font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40"
+                title="Save this song with its current key and capo to a practice setlist"
+              >
+                Save
+              </button>
+            </div>
+            {practiceSaveNotice && (
+              <span role="status" className="text-xs text-[var(--accent-primary)]">
+                {practiceSaveNotice}
+              </span>
+            )}
 
             {/* 2. AUTO-SCROLL & SPEED SETTINGS */}
             <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] relative">
@@ -952,7 +1110,7 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
                 >
                   {line.tokens.map((tok, tokIdx) => {
                     const transposed = tok.chord
-                      ? transposeChord(tok.chord, transpose)
+                      ? transposeChord(tok.chord, effectiveTranspose)
                       : null;
 
                     return (

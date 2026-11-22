@@ -25,6 +25,8 @@ interface PlayerContextType {
   lyrics: LyricsResponse | null;
   isLoadingLyrics: boolean;
   sponsorBlockSegments: SponsorBlockSegment[];
+  sleepTimerEndsAt: number | null;
+  setSleepTimer: (minutes: number) => void;
   isSponsorBlockEnabled: boolean;
   toggleSponsorBlock: () => void;
   sponsorBlockNotice: { show: boolean; category: string; from: number; to: number; uuid: string } | null;
@@ -49,6 +51,26 @@ interface PlayerContextType {
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
+function readSavedPlayerSession(): { track: Song | null; queue: Song[]; index: number; time: number } {
+  try {
+    if (typeof window === 'undefined') return { track: null, queue: [], index: -1, time: 0 };
+    const raw = localStorage.getItem('aetheria_playback_session');
+    if (!raw) return { track: null, queue: [], index: -1, time: 0 };
+    const saved = JSON.parse(raw);
+    const queue = Array.isArray(saved.queue)
+      ? saved.queue.filter((song: any) => song && typeof song.id === 'string').slice(0, 300)
+      : [];
+    const track = saved.track && typeof saved.track.id === 'string' ? saved.track as Song : null;
+    const index = queue.length
+      ? Math.max(0, Math.min(queue.length - 1, Number(saved.index) || 0))
+      : track ? 0 : -1;
+    const time = Number.isFinite(Number(saved.time)) ? Math.max(0, Number(saved.time)) : 0;
+    return { track, queue: track && !queue.some((song: Song) => song.id === track.id) ? [track, ...queue] : queue, index, time };
+  } catch {
+    return { track: null, queue: [], index: -1, time: 0 };
+  }
+}
+
 // Fisher-Yates shuffle generator preserving currentIndex
 function generateShuffleOrder(length: number, currentIndex: number): number[] {
   if (length <= 1) return [0];
@@ -71,20 +93,66 @@ declare global {
 }
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTrack, setCurrentTrack] = useState<Song | null>(null);
-  const [queue, setQueue] = useState<Song[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [savedSession] = useState(readSavedPlayerSession);
+  const [currentTrack, setCurrentTrack] = useState<Song | null>(savedSession.track);
+  const [queue, setQueue] = useState<Song[]>(savedSession.queue);
+  const [currentIndex, setCurrentIndex] = useState<number>(savedSession.index);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(savedSession.time);
+  const [duration, setDuration] = useState<number>(savedSession.track?.duration || 0);
   const [volume, setVolumeState] = useState<number>(0.85);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
-  const [isShuffle, setIsShuffle] = useState<boolean>(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(() => {
+    try {
+      const saved = localStorage.getItem('aetheria_repeat_mode') as RepeatMode | null;
+      return saved && ['off', 'all', 'one', 'repeat-all', 'repeat-one'].includes(saved) ? saved : 'off';
+    } catch { return 'off'; }
+  });
+  const [isShuffle, setIsShuffle] = useState<boolean>(() => {
+    try { return localStorage.getItem('aetheria_shuffle') === 'true'; }
+    catch { return false; }
+  });
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<LyricsResponse | null>(null);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false);
+  const [sleepTimerEndsAt, setSleepTimerEndsAt] = useState<number | null>(() => {
+    try {
+      const value = Number(localStorage.getItem('aetheria_sleep_timer'));
+      return Number.isFinite(value) && value > 0 ? value : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setSleepTimer = useCallback((minutes: number) => {
+    setSleepTimerEndsAt(minutes > 0 ? Date.now() + minutes * 60_000 : null);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (sleepTimerEndsAt) localStorage.setItem('aetheria_sleep_timer', String(sleepTimerEndsAt));
+      else localStorage.removeItem('aetheria_sleep_timer');
+    } catch {
+      // Timer still works for the current session if storage is unavailable.
+    }
+    if (!sleepTimerEndsAt) return;
+
+    const stopAt = sleepTimerEndsAt;
+    const stopPlayback = () => {
+      audioRef.current?.pause();
+      ytPlayerRef.current?.pauseVideo?.();
+      setIsPlaying(false);
+      setSleepTimerEndsAt(null);
+    };
+    const delay = stopAt - Date.now();
+    if (delay <= 0) {
+      stopPlayback();
+      return;
+    }
+    const timeout = window.setTimeout(stopPlayback, delay);
+    return () => window.clearTimeout(timeout);
+  }, [sleepTimerEndsAt]);
 
   // SponsorBlock state
   const [sponsorBlockSegments, setSponsorBlockSegments] = useState<SponsorBlockSegment[]>([]);
@@ -113,6 +181,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Single HTMLAudioElement instance (Section 19)
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const resumePositionRef = useRef<number>(savedSession.time);
+  const resumeTrackIdRef = useRef<string | null>(savedSession.track?.id || null);
 
   // Dual engine: YouTube IFrame player fallback instance
   const ytPlayerRef = useRef<any>(null);
@@ -141,6 +211,32 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const currentIndexRef = useRef<number>(-1);
   currentIndexRef.current = currentIndex;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('aetheria_repeat_mode', repeatMode);
+      localStorage.setItem('aetheria_shuffle', String(isShuffle));
+    } catch {
+      // Playback preferences remain active for the current session.
+    }
+  }, [repeatMode, isShuffle]);
+
+  useEffect(() => {
+    try {
+      if (!currentTrack && queue.length === 0) {
+        localStorage.removeItem('aetheria_playback_session');
+        return;
+      }
+      localStorage.setItem('aetheria_playback_session', JSON.stringify({
+        track: currentTrack,
+        queue: queue.slice(0, 300),
+        index: currentIndex,
+        time: currentTime,
+      }));
+    } catch {
+      // Ignore storage quota and private-mode errors; playback remains available.
+    }
+  }, [currentTrack, queue, currentIndex, currentTime]);
 
   const repeatModeRef = useRef<RepeatMode>('off');
   repeatModeRef.current = repeatMode;
@@ -529,6 +625,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsBuffering(true);
       setCurrentTime(0);
       setDuration(song.duration || 0);
+      if (song.id !== resumeTrackIdRef.current) {
+        resumePositionRef.current = 0;
+        resumeTrackIdRef.current = null;
+      }
       setCurrentTrack(song);
 
       // Handle queue update
@@ -587,6 +687,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
 
           if (audio) {
+            const resumeAt = song.id === resumeTrackIdRef.current ? resumePositionRef.current : 0;
+            if (resumeAt > 0) {
+              audio.addEventListener('loadedmetadata', () => {
+                if (thisRequestId === requestIdRef.current && audio.duration > resumeAt) {
+                  audio.currentTime = resumeAt;
+                }
+                resumePositionRef.current = 0;
+                resumeTrackIdRef.current = null;
+              }, { once: true });
+            }
             audio.src = streamData.url;
             audio.volume = isMuted ? 0 : volume;
             await audio.play().catch((err) => {
@@ -614,6 +724,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               player.loadVideoById(song.id);
               player.setVolume(isMuted ? 0 : volume * 100);
               player.playVideo();
+              if (song.id === resumeTrackIdRef.current && resumePositionRef.current > 0) {
+                player.seekTo(resumePositionRef.current, true);
+                resumePositionRef.current = 0;
+                resumeTrackIdRef.current = null;
+              }
               setIsPlaying(true);
             } catch (pErr) {
               console.warn('[PLAYER] player.loadVideoById error', pErr);
@@ -641,6 +756,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
+    if (
+      !isUsingYtEngineRef.current &&
+      audioRef.current &&
+      !audioRef.current.getAttribute('src')
+    ) {
+      playSong(currentTrack, queue.length ? queue : [currentTrack], Math.max(0, currentIndex));
+      return;
+    }
+
     if (isUsingYtEngineRef.current && ytPlayerRef.current) {
       if (isPlaying) {
         ytPlayerRef.current.pauseVideo();
@@ -658,7 +782,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setIsPlaying(true);
       }
     }
-  }, [currentTrack, isPlaying, queue, playSong]);
+  }, [currentTrack, currentIndex, isPlaying, queue, playSong]);
 
   // Seek
   const seek = useCallback((time: number) => {
@@ -993,6 +1117,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         lyrics,
         isLoadingLyrics,
         sponsorBlockSegments,
+        sleepTimerEndsAt,
+        setSleepTimer,
         isSponsorBlockEnabled,
         toggleSponsorBlock,
         sponsorBlockNotice,
