@@ -87,6 +87,7 @@ export interface StreamResponse {
   mimeType?: string;
   bitrate?: number;
   quality?: string;
+  availableQualities?: ('best' | 'standard' | 'data-saver')[];
   expiresIn?: number;
   isDirect?: boolean;
   code?: string;

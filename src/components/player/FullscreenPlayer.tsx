@@ -97,6 +97,12 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
     sponsorBlockSegments,
     sleepTimerEndsAt,
     setSleepTimer,
+    sleepAtTrackEnd,
+    setSleepAtTrackEnd,
+    audioQuality,
+    setAudioQuality,
+    crossfadeSeconds,
+    setCrossfadeSeconds,
     isSponsorBlockEnabled,
     toggleSponsorBlock,
     sponsorBlockNotice,
@@ -121,7 +127,18 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
   const [showTranslation, setShowTranslation] = useState(true);
   const [showRomaji, setShowRomaji] = useState(true);
   const [showChordModal, setShowChordModal] = useState(false);
+  const [lyricsFocusMode, setLyricsFocusMode] = useState(false);
+  const [lyricsFontSize, setLyricsFontSize] = useState<'normal' | 'large' | 'xl'>(() => {
+    try {
+      const saved = localStorage.getItem('aetheria_lyrics_font_size');
+      return saved === 'large' || saved === 'xl' ? saved : 'normal';
+    } catch { return 'normal'; }
+  });
   const [shareMessage, setShareMessage] = useState('');
+  useEffect(() => {
+    try { localStorage.setItem('aetheria_lyrics_font_size', lyricsFontSize); } catch {}
+  }, [lyricsFontSize]);
+
   const lyricsContainerRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -319,6 +336,17 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
         </div>
 
         <div className="flex items-center gap-1.5">
+          {activeTab === 'lyrics' && (
+            <button
+              type="button"
+              onClick={() => setLyricsFocusMode((value) => !value)}
+              aria-pressed={lyricsFocusMode}
+              aria-label={lyricsFocusMode ? 'Exit lyrics focus mode' : 'Enter lyrics focus mode'}
+              className="rounded-full px-2.5 py-2 text-xs text-white/60 hover:bg-white/[0.06] hover:text-white"
+            >
+              {lyricsFocusMode ? 'Exit focus' : 'Focus'}
+            </button>
+          )}
           {/* SponsorBlock toggle */}
           <button
             onClick={toggleSponsorBlock}
@@ -410,7 +438,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
           >
             {/* Top Toolbar / Source & Language Controls */}
             {lyrics?.lines && lyrics.lines.length > 0 && (
-              <div className="sticky top-0 z-20 flex flex-wrap items-center justify-center gap-2 py-1.5 px-3 rounded-2xl bg-[#090A0F]/80 backdrop-blur-md border border-white/[0.08] shadow-lg mb-2">
+              <div className="sticky top-0 z-20 flex flex-wrap items-center justify-center gap-2 py-1.5 px-3 rounded-2xl bg-[#090A0F]/80 backdrop-blur-md border border-white/[0.08] shadow-lg mb-2" style={{ display: lyricsFocusMode ? 'none' : undefined }}>
                 {/* Source Badge */}
                 <span className="text-[10px] text-white/50 font-mono tracking-tight bg-white/[0.06] border border-white/[0.08] px-2.5 py-1 rounded-full">
                   {lyrics.sourceName ||
@@ -483,6 +511,24 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
               </div>
             )}
 
+            {lyricsFocusMode && (
+              <div className="sticky top-0 z-20 flex items-center gap-3 rounded-xl border border-white/10 bg-[var(--bg-main)]/95 px-3 py-2">
+                <span className="text-xs text-white/55">Lyrics focus</span>
+                <label className="flex items-center gap-2 text-xs text-white/55">
+                  Text size
+                  <select
+                    value={lyricsFontSize}
+                    onChange={(event) => setLyricsFontSize(event.target.value as 'normal' | 'large' | 'xl')}
+                    className="rounded-lg border border-white/10 bg-[#191a17] px-2 py-1 text-white"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="large">Large</option>
+                    <option value="xl">Extra large</option>
+                  </select>
+                </label>
+              </div>
+            )}
+
             {isLoadingLyrics ? (
               <div className="flex flex-col items-center gap-3 text-white/40 my-auto">
                 <span className="w-7 h-7 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin" />
@@ -503,6 +549,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
                     startMs={line.startMs}
                     isActive={idx === activeLineIndex}
                     isLarge={true}
+                    fontSize={lyricsFontSize === 'normal' ? '1.25rem' : lyricsFontSize === 'large' ? '1.5rem' : '1.85rem'}
                     onSeek={handleSeek}
                   />
                 ))}
@@ -737,6 +784,37 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({ isOpen, onCl
               style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
             />
           </div>
+        </div>
+        <div className="w-full max-w-2xl flex flex-wrap items-end justify-center gap-3 border-t border-white/[0.06] pt-3">
+          <label className="flex flex-col gap-1 text-[10px] text-white/45">
+            Audio quality
+            <select value={audioQuality} onChange={(event) => setAudioQuality(event.target.value as 'best' | 'standard' | 'data-saver')} className="rounded-lg border border-white/10 bg-[#191a17] px-2.5 py-2 text-xs text-white">
+              <option value="best">Best available</option>
+              <option value="standard">Standard</option>
+              <option value="data-saver">Data saver</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[10px] text-white/45">
+            Crossfade
+            <select value={crossfadeSeconds} onChange={(event) => setCrossfadeSeconds(Number(event.target.value))} className="rounded-lg border border-white/10 bg-[#191a17] px-2.5 py-2 text-xs text-white">
+              <option value={0}>Off</option>
+              <option value={3}>3 seconds</option>
+              <option value={5}>5 seconds</option>
+              <option value={8}>8 seconds</option>
+              <option value={10}>10 seconds</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => setSleepAtTrackEnd(!sleepAtTrackEnd)}
+            aria-pressed={sleepAtTrackEnd}
+            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white/65 hover:bg-white/[0.06]"
+          >
+            {sleepAtTrackEnd ? 'Stop after this song: on' : 'Stop after this song'}
+          </button>
+          <p className="basis-full text-center text-[10px] text-white/35">
+            Quality and crossfade apply to direct audio streams. YouTube fallback streams keep their own settings.
+          </p>
         </div>
       </footer>
 

@@ -742,7 +742,7 @@ export class InnertubeService {
   }
 
   // --- STREAMING URL ---
-  async getStreamUrl(videoId: string): Promise<StreamResponse> {
+  async getStreamUrl(videoId: string, quality: 'best' | 'standard' | 'data-saver' = 'best'): Promise<StreamResponse> {
     const yt = await this.getClient();
     console.log(`[STREAM] Extracting audio format for videoId=${videoId}`);
 
@@ -753,7 +753,21 @@ export class InnertubeService {
       if (info && info.streaming_data) {
         let format: any = null;
         try {
-          format = info.chooseFormat({ type: 'audio', quality: 'best' });
+          const formats = [
+            ...(info.streaming_data.formats || []),
+            ...(info.streaming_data.adaptive_formats || []),
+          ].filter((candidate: any) => candidate.has_audio && !candidate.has_video && candidate.itag)
+            .sort((a: any, b: any) => a.bitrate - b.bitrate);
+          if (formats.length > 0) {
+            let selected = formats[formats.length - 1];
+            if (quality === 'data-saver') selected = formats[0];
+            if (quality === 'standard') {
+              selected = formats.filter((item: any) => item.bitrate <= 128000).slice(-1)[0] || formats[0];
+            }
+            format = info.chooseFormat({ type: 'audio', itag: selected.itag });
+          } else {
+            format = info.chooseFormat({ type: 'audio', quality: 'best' });
+          }
         } catch {
           // Format not available or restricted
         }
@@ -783,7 +797,8 @@ export class InnertubeService {
               url: directUrl,
               mimeType: format.mime_type || 'audio/mp4',
               bitrate: format.bitrate || 128000,
-              quality: 'High Quality Audio',
+              quality: Math.round((format.bitrate || 128000) / 1000) + ' kbps',
+              availableQualities: ['best', 'standard', 'data-saver'],
               expiresIn: 3600 * 6,
               isDirect: true,
             };

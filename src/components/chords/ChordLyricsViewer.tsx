@@ -115,6 +115,9 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   const { playlists, addToPlaylist, createPlaylist } = useLibrary();
   const [selectedSetlistId, setSelectedSetlistId] = useState('');
   const [practiceSaveNotice, setPracticeSaveNotice] = useState('');
+  const [tuning, setTuning] = useState(initialSong?.tuning || 'E A D G B E');
+  const [strumming, setStrumming] = useState(initialSong?.strumming || '');
+  const [practiceNotes, setPracticeNotes] = useState(initialSong?.practiceNotes || '');
 
   // Determine starting song target
   const effectiveInitialSong = initialSong || (currentTrack ? {
@@ -149,6 +152,13 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
   const [currentThumbnail, setCurrentThumbnail] = useState<string | undefined>(
     effectiveInitialSong?.thumbnail
   );
+  useEffect(() => {
+    if (initialSong?.id !== currentVideoId) return;
+    setCapo(initialSong?.capo || 0);
+    setTuning(initialSong?.tuning || 'E A D G B E');
+    setStrumming(initialSong?.strumming || '');
+    setPracticeNotes(initialSong?.practiceNotes || '');
+  }, [currentVideoId, initialSong?.id]);
   const [originalKey, setOriginalKey] = useState<string>('C');
 
   // Text content & editor: Start empty when loading a specific song to avoid showing another song's chords!
@@ -465,6 +475,9 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
       ...baseSong,
       practiceKey: transposeChord(originalKey, transpose),
       capo,
+      tuning,
+      strumming: strumming.trim(),
+      practiceNotes: practiceNotes.trim(),
     });
     setPracticeSaveNotice('Saved key ' + transposeChord(originalKey, transpose) + ', capo ' + capo);
     window.setTimeout(() => setPracticeSaveNotice(''), 2600);
@@ -975,6 +988,24 @@ export const ChordLyricsViewer: React.FC<ChordLyricsViewerProps> = ({
           </div>
         </div>
       </div>
+
+      <details className="mx-4 mb-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+        <summary className="cursor-pointer text-xs font-medium text-white/65">Practice notes and tuning</summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-[11px] text-white/50">
+            Tuning
+            <input value={tuning} onChange={(event) => setTuning(event.target.value)} maxLength={40} placeholder="E A D G B E" className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white" />
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] text-white/50">
+            Strumming pattern
+            <input value={strumming} onChange={(event) => setStrumming(event.target.value)} maxLength={80} placeholder="D-DU-UDU" className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white" />
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] text-white/50 sm:col-span-2">
+            Notes
+            <textarea value={practiceNotes} onChange={(event) => setPracticeNotes(event.target.value)} maxLength={1000} rows={2} placeholder="Add a reminder for this song..." className="resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white" />
+          </label>
+        </div>
+      </details>
 
       {/* 2. UNIQUE CHORDS QUICK BAR */}
       {uniqueChords.length > 0 && !isEditing && !isSearching && (

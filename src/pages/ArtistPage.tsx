@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Play, Shuffle, Users, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Heart, Play, Shuffle, Users, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import type { Artist, Song, Album, NavigationPage } from '../types/music.js';
 import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { CardItem } from '../components/cards/CardItem.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { useLibrary } from '../contexts/LibraryContext.js';
 import { toSafeText } from '../utils/text.js';
 
 interface ArtistPageProps {
@@ -25,6 +26,8 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({ artistId, onNavigate }) 
   const [error, setError] = useState<string | null>(null);
 
   const { playSong } = usePlayer();
+  const { followedArtists, toggleFollowArtist } = useLibrary();
+  const isFollowing = followedArtists.some((item) => item.id === artistId);
 
   const loadArtist = async () => {
     setIsLoading(true);
@@ -164,6 +167,15 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({ artistId, onNavigate }) 
             >
               <Play className="w-4 h-4 fill-black" />
               Play All
+            </button>
+            <button
+              type="button"
+              onClick={() => artist && toggleFollowArtist(artist)}
+              aria-pressed={isFollowing}
+              className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-medium text-white/75 hover:bg-white/[0.06]"
+            >
+              <Heart className={isFollowing ? 'h-4 w-4 fill-[var(--accent-primary)] text-[var(--accent-primary)]' : 'h-4 w-4'} />
+              {isFollowing ? 'Following' : 'Follow artist'}
             </button>
             <button
               onClick={handleShuffleAll}

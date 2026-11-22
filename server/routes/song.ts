@@ -53,7 +53,10 @@ const handleStream = async (req: Request, res: Response, forceRefresh = false) =
     });
   }
 
-  const cacheKey = `stream_url_${videoId}`;
+  const quality = req.query.quality === 'data-saver' || req.query.quality === 'standard'
+    ? req.query.quality
+    : 'best';
+  const cacheKey = `stream_url_${videoId}_${quality}`;
   if (!forceRefresh) {
     const cached = appCache.get<any>(cacheKey);
     if (cached) {
@@ -62,7 +65,7 @@ const handleStream = async (req: Request, res: Response, forceRefresh = false) =
   }
 
   try {
-    const streamData = await innertubeService.getStreamUrl(videoId);
+    const streamData = await innertubeService.getStreamUrl(videoId, quality as 'best' | 'standard' | 'data-saver');
     if (streamData.success && streamData.url) {
       // Cache stream URL for 2 hours (less than YouTube expiry)
       appCache.set(cacheKey, streamData, 2 * 60 * 60 * 1000);

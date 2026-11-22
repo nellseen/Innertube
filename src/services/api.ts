@@ -1,4 +1,4 @@
-import type {
+import type { AudioQuality,
   Song,
   Artist,
   Album,
@@ -136,9 +136,9 @@ export const api = {
     return request(`/song/${videoId}`);
   },
 
-  async getStreamUrl(videoId: string, refresh = false): Promise<StreamResponse> {
+  async getStreamUrl(videoId: string, refresh = false, quality: AudioQuality = 'best'): Promise<StreamResponse> {
     const path = refresh ? `/stream/${videoId}/refresh` : `/song/${videoId}/stream`;
-    return request(path);
+    return request(path + '?quality=' + encodeURIComponent(quality));
   },
 
   async getLyrics(

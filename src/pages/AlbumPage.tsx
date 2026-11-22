@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Play, Shuffle, Disc3, Loader2, RefreshCw } from 'lucide-react';
+import { Heart, Play, Shuffle, Disc3, Loader2, RefreshCw } from 'lucide-react';
 import type { Album, Song, NavigationPage } from '../types/music.js';
 import { api } from '../services/api.js';
 import { SongRow } from '../components/cards/SongRow.js';
 import { usePlayer } from '../contexts/PlayerContext.js';
+import { useLibrary } from '../contexts/LibraryContext.js';
 import { toSafeText } from '../utils/text.js';
 
 interface AlbumPageProps {
@@ -18,6 +19,8 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
   const [error, setError] = useState<string | null>(null);
 
   const { playSong } = usePlayer();
+  const { followedAlbums, toggleFollowAlbum } = useLibrary();
+  const isFollowing = followedAlbums.some((item) => item.id === albumId);
 
   const loadAlbum = async () => {
     setIsLoading(true);
@@ -134,6 +137,15 @@ export const AlbumPage: React.FC<AlbumPageProps> = ({ albumId, onNavigate }) => 
             >
               <Play className="w-4 h-4 fill-black" />
               Play Album
+            </button>
+            <button
+              type="button"
+              onClick={() => album && toggleFollowAlbum(album)}
+              aria-pressed={isFollowing}
+              className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-medium text-white/75 hover:bg-white/[0.06]"
+            >
+              <Heart className={isFollowing ? 'h-4 w-4 fill-[var(--accent-primary)] text-[var(--accent-primary)]' : 'h-4 w-4'} />
+              {isFollowing ? 'Following' : 'Follow album'}
             </button>
             <button
               onClick={handleShuffleAlbum}

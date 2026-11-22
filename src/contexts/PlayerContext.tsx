@@ -6,7 +6,7 @@ import React, {
   useRef,
   useCallback,
 } from 'react';
-import type { Song, RepeatMode, LyricsResponse, SponsorBlockSegment } from '../types/music.js';
+import type { Song, RepeatMode, LyricsResponse, SponsorBlockSegment, AudioQuality } from '../types/music.js';
 import { api } from '../services/api.js';
 
 interface PlayerContextType {
@@ -27,6 +27,12 @@ interface PlayerContextType {
   sponsorBlockSegments: SponsorBlockSegment[];
   sleepTimerEndsAt: number | null;
   setSleepTimer: (minutes: number) => void;
+  sleepAtTrackEnd: boolean;
+  setSleepAtTrackEnd: (enabled: boolean) => void;
+  audioQuality: AudioQuality;
+  setAudioQuality: (quality: AudioQuality) => void;
+  crossfadeSeconds: number;
+  setCrossfadeSeconds: (seconds: number) => void;
   isSponsorBlockEnabled: boolean;
   toggleSponsorBlock: () => void;
   sponsorBlockNotice: { show: boolean; category: string; from: number; to: number; uuid: string } | null;
@@ -116,6 +122,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<LyricsResponse | null>(null);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false);
+  const [audioQuality, setAudioQuality] = useState<AudioQuality>(() => {
+    try {
+      const saved = localStorage.getItem('aetheria_audio_quality');
+      return saved === 'standard' || saved === 'data-saver' ? saved : 'best';
+    } catch { return 'best'; }
+  });
+  const [crossfadeSeconds, setCrossfadeSeconds] = useState<number>(() => {
+    try {
+      const value = Number(localStorage.getItem('aetheria_crossfade_seconds'));
+      return Number.isFinite(value) && value >= 0 && value <= 10 ? value : 0;
+    } catch { return 0; }
+  });
+  const [sleepAtTrackEnd, setSleepAtTrackEnd] = useState<boolean>(() => {
+    try { return localStorage.getItem('aetheria_sleep_at_track_end') === 'true'; }
+    catch { return false; }
+  });
+  const sleepAtTrackEndRef = useRef(sleepAtTrackEnd);
+  sleepAtTrackEndRef.current = sleepAtTrackEnd;
   const [sleepTimerEndsAt, setSleepTimerEndsAt] = useState<number | null>(() => {
     try {
       const value = Number(localStorage.getItem('aetheria_sleep_timer'));
@@ -128,6 +152,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setSleepTimer = useCallback((minutes: number) => {
     setSleepTimerEndsAt(minutes > 0 ? Date.now() + minutes * 60_000 : null);
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('aetheria_audio_quality', audioQuality);
+      localStorage.setItem('aetheria_crossfade_seconds', String(crossfadeSeconds));
+      localStorage.setItem('aetheria_sleep_at_track_end', String(sleepAtTrackEnd));
+    } catch {
+      // Preferences remain active for the current session.
+    }
+  }, [audioQuality, crossfadeSeconds, sleepAtTrackEnd]);
 
   useEffect(() => {
     try {
@@ -181,6 +215,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Single HTMLAudioElement instance (Section 19)
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const crossfadeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const crossfadePrefetchRef = useRef<{ trackId: string; index: number; url?: string } | null>(null);
+  const crossfadeStartedRef = useRef(false);
+  const crossfadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resumePositionRef = useRef<number>(savedSession.time);
   const resumeTrackIdRef = useRef<string | null>(savedSession.track?.id || null);
 
@@ -244,70 +282,72 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const isShuffleRef = useRef<boolean>(false);
   isShuffleRef.current = isShuffle;
 
-  // Initialize Audio Element once
+  // Keep a second silent deck ready for direct-stream crossfades.
   useEffect(() => {
     const audio = new Audio();
+    const secondary = new Audio();
     audio.preload = 'auto';
+    secondary.preload = 'auto';
     audioRef.current = audio;
+    crossfadeAudioRef.current = secondary;
 
-    const onTimeUpdate = () => {
-      if (!isUsingYtEngineRef.current) {
-        setCurrentTime(audio.currentTime);
+    const onTimeUpdate = (event: Event) => {
+      const target = event.currentTarget as HTMLAudioElement;
+      if (target === audioRef.current && !isUsingYtEngineRef.current) setCurrentTime(target.currentTime);
+    };
+    const onDurationChange = (event: Event) => {
+      const target = event.currentTarget as HTMLAudioElement;
+      if (target === audioRef.current && !isUsingYtEngineRef.current && target.duration && !isNaN(target.duration)) {
+        setDuration(target.duration);
       }
     };
-
-    const onDurationChange = () => {
-      if (!isUsingYtEngineRef.current && audio.duration && !isNaN(audio.duration)) {
-        setDuration(audio.duration);
-      }
+    const onWaiting = (event: Event) => {
+      if (event.currentTarget === audioRef.current && !isUsingYtEngineRef.current) setIsBuffering(true);
     };
-
-    const onWaiting = () => {
-      if (!isUsingYtEngineRef.current) setIsBuffering(true);
-    };
-
-    const onPlaying = () => {
-      if (!isUsingYtEngineRef.current) {
+    const onPlaying = (event: Event) => {
+      if (event.currentTarget === audioRef.current && !isUsingYtEngineRef.current) {
         setIsBuffering(false);
         setIsPlaying(true);
       }
     };
-
-    const onPause = () => {
-      if (!isUsingYtEngineRef.current) {
+    const onPause = (event: Event) => {
+      if (event.currentTarget === audioRef.current && !isUsingYtEngineRef.current && !crossfadeStartedRef.current) {
         setIsPlaying(false);
       }
     };
-
-    const onError = () => {
-      if (!isUsingYtEngineRef.current) {
+    const onError = (event: Event) => {
+      if (event.currentTarget === audioRef.current && !isUsingYtEngineRef.current) {
         console.warn('[PLAYER] Audio element error, attempting recovery');
         setIsBuffering(false);
       }
     };
+    const elements = [audio, secondary];
+    for (const element of elements) {
+      element.addEventListener('timeupdate', onTimeUpdate);
+      element.addEventListener('durationchange', onDurationChange);
+      element.addEventListener('waiting', onWaiting);
+      element.addEventListener('playing', onPlaying);
+      element.addEventListener('pause', onPause);
+      element.addEventListener('error', onError);
+    }
 
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('durationchange', onDurationChange);
-    audio.addEventListener('waiting', onWaiting);
-    audio.addEventListener('playing', onPlaying);
-    audio.addEventListener('pause', onPause);
-    audio.addEventListener('error', onError);
-
-    // Load YouTube IFrame API script dynamically for seamless fallback
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     const firstScript = document.getElementsByTagName('script')[0];
     firstScript.parentNode?.insertBefore(tag, firstScript);
 
     return () => {
-      audio.pause();
-      audio.src = '';
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('durationchange', onDurationChange);
-      audio.removeEventListener('waiting', onWaiting);
-      audio.removeEventListener('playing', onPlaying);
-      audio.removeEventListener('pause', onPause);
-      audio.removeEventListener('error', onError);
+      if (crossfadeIntervalRef.current) clearInterval(crossfadeIntervalRef.current);
+      for (const element of elements) {
+        element.pause();
+        element.src = '';
+        element.removeEventListener('timeupdate', onTimeUpdate);
+        element.removeEventListener('durationchange', onDurationChange);
+        element.removeEventListener('waiting', onWaiting);
+        element.removeEventListener('playing', onPlaying);
+        element.removeEventListener('pause', onPause);
+        element.removeEventListener('error', onError);
+      }
     };
   }, []);
 
@@ -523,6 +563,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Play next track handler
   const handleTrackEnded = useCallback(() => {
+    if (sleepAtTrackEndRef.current) {
+      setSleepAtTrackEnd(false);
+      audioRef.current?.pause();
+      ytPlayerRef.current?.pauseVideo?.();
+      setIsPlaying(false);
+      return;
+    }
     const currentRepeat = repeatModeRef.current;
     if (currentRepeat === 'repeat-one' || currentRepeat === 'one') {
       seek(0);
@@ -573,19 +620,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlaying(false);
   }, []);
 
-  // Attach audio ended listener
+  // Attach the ended listener to both decks while allowing only the active one to advance.
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const onAudioEnded = () => {
-      if (!isUsingYtEngineRef.current) {
+    const onAudioEnded = (event: Event) => {
+      if (event.currentTarget === audioRef.current && !isUsingYtEngineRef.current && !crossfadeStartedRef.current) {
         handleTrackEnded();
       }
     };
-
-    audio.addEventListener('ended', onAudioEnded);
-    return () => audio.removeEventListener('ended', onAudioEnded);
+    const elements = [audioRef.current, crossfadeAudioRef.current].filter(Boolean) as HTMLAudioElement[];
+    elements.forEach((audio) => audio.addEventListener('ended', onAudioEnded));
+    return () => elements.forEach((audio) => audio.removeEventListener('ended', onAudioEnded));
   }, [handleTrackEnded]);
 
   // Main playback starter
@@ -620,6 +664,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       // Race condition protection: increment request ID (Section 23)
       const thisRequestId = ++requestIdRef.current;
+      if (crossfadeIntervalRef.current) clearInterval(crossfadeIntervalRef.current);
+      crossfadeIntervalRef.current = null;
+      crossfadeStartedRef.current = false;
+      crossfadePrefetchRef.current = null;
+      const spareAudio = crossfadeAudioRef.current;
+      if (spareAudio) {
+        spareAudio.pause();
+        spareAudio.removeAttribute('src');
+        spareAudio.load();
+      }
 
       setError(null);
       setIsBuffering(true);
@@ -670,7 +724,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       try {
         // Step 1: Check stream endpoint
-        const streamData = await api.getStreamUrl(song.id).catch(() => null);
+        const streamData = await api.getStreamUrl(song.id, false, audioQuality).catch(() => null);
 
         // Check race condition: if another song was requested while waiting, discard!
         if (thisRequestId !== requestIdRef.current) {
@@ -744,8 +798,93 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       }
     },
-    [volume, isMuted, ensureYtPlayer, handleTrackEnded, fetchLyrics]
+    [volume, isMuted, audioQuality, ensureYtPlayer, handleTrackEnded, fetchLyrics]
   );
+
+  // Direct audio streams can overlap on two HTMLAudioElements; the YouTube iframe fallback advances normally.
+  useEffect(() => {
+    const currentAudio = audioRef.current;
+    const nextAudio = crossfadeAudioRef.current;
+    if (!crossfadeSeconds || !isPlaying || isUsingYtEngineRef.current || !currentAudio || !nextAudio || !currentTrack) return;
+    const currentQueue = queueRef.current;
+    let nextIndex = currentIndexRef.current + 1;
+    if (isShuffleRef.current && shuffleOrderRef.current.length > 0) {
+      const pointer = shufflePointerRef.current + 1;
+      if (pointer < shuffleOrderRef.current.length) nextIndex = shuffleOrderRef.current[pointer];
+      else if (repeatModeRef.current === 'repeat-all' || repeatModeRef.current === 'all') {
+        nextIndex = shuffleOrderRef.current[0];
+      } else return;
+    } else if (nextIndex >= currentQueue.length) {
+      if (repeatModeRef.current === 'repeat-all' || repeatModeRef.current === 'all') nextIndex = 0;
+      else return;
+    }
+    const nextSong = currentQueue[nextIndex];
+    if (!nextSong || nextSong.id === currentTrack.id) return;
+
+    const trackDuration = currentAudio.duration || duration;
+    const remaining = trackDuration - currentAudio.currentTime;
+    if (remaining > crossfadeSeconds + 8) return;
+
+    let prepared = crossfadePrefetchRef.current;
+    if (!prepared || prepared.trackId !== nextSong.id || prepared.index !== nextIndex) {
+      crossfadePrefetchRef.current = { trackId: nextSong.id, index: nextIndex };
+      api.getStreamUrl(nextSong.id, false, audioQuality).then((stream) => {
+        const latest = crossfadePrefetchRef.current;
+        if (!stream.success || !stream.url || !latest || latest.trackId !== nextSong.id) return;
+        nextAudio.src = stream.url;
+        nextAudio.preload = 'auto';
+        nextAudio.load();
+        crossfadePrefetchRef.current = { trackId: nextSong.id, index: nextIndex, url: stream.url };
+      }).catch(() => {
+        crossfadePrefetchRef.current = null;
+      });
+      return;
+    }
+
+    if (remaining > crossfadeSeconds || !prepared.url || nextAudio.readyState < 2 || crossfadeStartedRef.current) return;
+    if (currentQueue[nextIndex]?.id !== prepared.trackId) {
+      crossfadePrefetchRef.current = null;
+      return;
+    }
+
+    crossfadeStartedRef.current = true;
+    nextAudio.currentTime = 0;
+    nextAudio.volume = 0;
+    nextAudio.play().catch(() => {
+      crossfadeStartedRef.current = false;
+    });
+    const fadeStartedAt = Date.now();
+    const fadeDuration = Math.max(500, Math.min(crossfadeSeconds * 1000, remaining * 1000));
+    if (crossfadeIntervalRef.current) clearInterval(crossfadeIntervalRef.current);
+    crossfadeIntervalRef.current = setInterval(() => {
+      const progress = Math.min(1, (Date.now() - fadeStartedAt) / fadeDuration);
+      const targetVolume = isMuted ? 0 : volume;
+      currentAudio.volume = targetVolume * (1 - progress);
+      nextAudio.volume = targetVolume * progress;
+
+      if (progress < 1) return;
+      if (crossfadeIntervalRef.current) clearInterval(crossfadeIntervalRef.current);
+      crossfadeIntervalRef.current = null;
+      currentAudio.pause();
+      currentAudio.removeAttribute('src');
+      currentAudio.load();
+      audioRef.current = nextAudio;
+      crossfadeAudioRef.current = currentAudio;
+      nextAudio.volume = targetVolume;
+      currentIndexRef.current = nextIndex;
+      setCurrentIndex(nextIndex);
+      setCurrentTrack(nextSong);
+      setCurrentTime(nextAudio.currentTime);
+      setDuration(nextAudio.duration || nextSong.duration || 0);
+      setIsPlaying(true);
+      setIsBuffering(false);
+      const artists = Array.isArray(nextSong.artists) ? nextSong.artists.map((artist) => artist.name).join(', ') : '';
+      fetchLyrics(nextSong.id, nextSong.title, artists, nextSong.duration);
+      fetchSponsorBlock(nextSong.id);
+      crossfadeStartedRef.current = false;
+      crossfadePrefetchRef.current = null;
+    }, 40);
+  }, [audioQuality, crossfadeSeconds, currentTrack, currentTime, duration, fetchLyrics, fetchSponsorBlock, isMuted, isPlaying, volume]);
 
   // Play / Pause toggle
   const togglePlay = useCallback(() => {
@@ -1119,6 +1258,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sponsorBlockSegments,
         sleepTimerEndsAt,
         setSleepTimer,
+        sleepAtTrackEnd,
+        setSleepAtTrackEnd,
+        audioQuality,
+        setAudioQuality,
+        crossfadeSeconds,
+        setCrossfadeSeconds,
         isSponsorBlockEnabled,
         toggleSponsorBlock,
         sponsorBlockNotice,

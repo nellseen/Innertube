@@ -9,6 +9,9 @@ export interface Song {
   isExplicit?: boolean;
   practiceKey?: string;
   capo?: number;
+  tuning?: string;
+  strumming?: string;
+  practiceNotes?: string;
 }
 
 export interface Artist {
@@ -82,6 +85,8 @@ export interface SponsorBlockResponse {
   segments: SponsorBlockSegment[];
 }
 
+export type AudioQuality = 'best' | 'standard' | 'data-saver';
+
 export interface StreamResponse {
   success: boolean;
   url?: string;
@@ -89,6 +94,7 @@ export interface StreamResponse {
   mimeType?: string;
   bitrate?: number;
   quality?: string;
+  availableQualities?: AudioQuality[];
   expiresIn?: number;
   isDirect?: boolean;
   code?: string;

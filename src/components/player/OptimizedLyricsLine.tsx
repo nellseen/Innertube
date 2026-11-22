@@ -12,6 +12,7 @@ interface OptimizedLyricsLineProps {
   startMs?: number;
   isActive: boolean;
   isLarge?: boolean;
+  fontSize?: string;
   onSeek?: (startMs: number) => void;
 }
 
@@ -27,6 +28,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
     startMs,
     isActive,
     isLarge = false,
+    fontSize,
     onSeek,
   }) => {
     const handleClick = () => {
@@ -57,7 +59,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
         }`}
       >
         {/* Original Lyrics Line */}
-        <p className="leading-relaxed tracking-normal">{toSafeText(text)}</p>
+        <p className="leading-relaxed tracking-normal" style={fontSize ? { fontSize } : undefined}>{toSafeText(text)}</p>
 
         {/* Optional Romaji / Phonetic helper */}
         {showRomaji && romaji && (
@@ -92,6 +94,7 @@ export const OptimizedLyricsLine = memo<OptimizedLyricsLineProps>(
       prev.showTranslation === next.showTranslation &&
       prev.showRomaji === next.showRomaji &&
       prev.isLarge === next.isLarge &&
+      prev.fontSize === next.fontSize &&
       prev.hasTimestamp === next.hasTimestamp &&
       prev.startMs === next.startMs
     );
